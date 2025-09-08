@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import html2canvas from 'html2canvas';
+import { createShareableUrl, generateShareTitle } from '../utils/urlUtils';
 
-const ScreenshotShare = ({ targetId }) => {
+const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout }) => {
   const [isCapturing, setIsCapturing] = useState(false);
-  const [lastScreenshot, setLastScreenshot] = useState(null);
 
   const captureScreenshot = async () => {
     const targetElement = document.getElementById(targetId);
@@ -27,12 +27,15 @@ const ScreenshotShare = ({ targetId }) => {
       // Convert canvas to blob
       canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
-        setLastScreenshot(url);
         
-        // Trigger download
+        // Trigger download with descriptive filename
+        const shareTitle = generateShareTitle({ collection1, collection2, timeframe });
+        const sanitizedTitle = shareTitle.replace(/[^a-z0-9\s-]/gi, '').replace(/\s+/g, '-').toLowerCase();
+        const filename = `${sanitizedTitle}-${new Date().toISOString().slice(0, 10)}.png`;
+        
         const link = document.createElement('a');
         link.href = url;
-        link.download = `nft-floor-comparison-${new Date().toISOString().slice(0, 10)}.png`;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -51,41 +54,34 @@ const ScreenshotShare = ({ targetId }) => {
     }
   };
 
-  const shareScreenshot = async () => {
-    if (!lastScreenshot) {
-      alert('Please capture a screenshot first.');
-      return;
-    }
+
+  const shareUrl = () => {
+    const shareTitle = generateShareTitle({ collection1, collection2, timeframe });
+    const shareUrl = createShareableUrl({ collection1, collection2, timeframe, layout });
+    const shareText = `${shareTitle} - View interactive comparison: ${shareUrl}`;
 
     if (navigator.share) {
-      try {
-        // Convert blob URL back to blob for sharing
-        const response = await fetch(lastScreenshot);
-        const blob = await response.blob();
-        const file = new File([blob], 'nft-floor-comparison.png', { type: 'image/png' });
-
-        await navigator.share({
-          title: 'NFT Floor Price Comparison',
-          text: 'Check out this NFT floor price comparison!',
-          files: [file],
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-        // Fallback to copying link
+      navigator.share({
+        title: shareTitle,
+        text: shareText,
+        url: shareUrl,
+      }).catch((error) => {
+        console.error('Error sharing URL:', error);
         copyToClipboard();
-      }
+      });
     } else {
-      // Fallback for browsers that don't support Web Share API
       copyToClipboard();
     }
   };
 
   const copyToClipboard = () => {
-    const text = 'Check out this NFT floor price comparison created with NFT Floor Compare!';
+    const shareTitle = generateShareTitle({ collection1, collection2, timeframe });
+    const shareUrl = createShareableUrl({ collection1, collection2, timeframe, layout });
+    const text = `${shareTitle} - View interactive comparison: ${shareUrl}`;
     
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        alert('Comparison text copied to clipboard!');
+        alert('Comparison link copied to clipboard!');
       }).catch(() => {
         alert('Unable to copy to clipboard.');
       });
@@ -97,7 +93,7 @@ const ScreenshotShare = ({ targetId }) => {
       textArea.select();
       try {
         document.execCommand('copy');
-        alert('Comparison text copied to clipboard!');
+        alert('Comparison link copied to clipboard!');
       } catch (err) {
         alert('Unable to copy to clipboard.');
       }
@@ -106,48 +102,34 @@ const ScreenshotShare = ({ targetId }) => {
   };
 
   return (
-    <div className="screenshot-share">
-      <div className="screenshot-buttons">
-        <button
-          onClick={captureScreenshot}
-          disabled={isCapturing}
-          className="capture-button"
-          title="Capture and download screenshot"
-        >
-          {isCapturing ? (
-            <>
-              <div className="button-spinner"></div>
-              <span>Capturing...</span>
-            </>
-          ) : (
-            <>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4z"/>
-                <path d="M6.5 7.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zM8 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
-                <path d="M3 12l2.5-3.5L8 11l2.5-3.5L13 12H3z"/>
-              </svg>
-              <span>Screenshot</span>
-            </>
-          )}
-        </button>
-
-        {lastScreenshot && (
-          <button
-            onClick={shareScreenshot}
-            className="share-button"
-            title="Share screenshot"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5z"/>
-            </svg>
-            <span>Share</span>
-          </button>
+    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <button 
+        onClick={captureScreenshot}
+        disabled={isCapturing}
+        className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-white text-black gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_#000000]"
+        title="Capture and download screenshot"
+      >
+        {isCapturing ? (
+          <>
+            <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+            <span className="truncate hidden sm:inline">Capturing...</span>
+          </>
+        ) : (
+          <>
+            <span className="material-symbols-outlined">screenshot</span>
+            <span className="truncate hidden sm:inline">Screenshot</span>
+          </>
         )}
-      </div>
-      
-      <div className="screenshot-info">
-        <small>Capture and share your floor price comparisons</small>
-      </div>
+      </button>
+
+      <button 
+        onClick={shareUrl}
+        className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-blue-500 text-white gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-blue-600 transition-colors shadow-[4px_4px_0px_#000000]"
+        title="Share comparison URL"
+      >
+        <span className="material-symbols-outlined">link</span>
+        <span className="truncate hidden sm:inline">Share URL</span>
+      </button>
     </div>
   );
 };

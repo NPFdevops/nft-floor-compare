@@ -1,182 +1,104 @@
-import React, { useMemo } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import 'chartjs-adapter-date-fns';
+import React from 'react';
+import TradingViewChart from './TradingViewChart';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  TimeScale
-);
-
-const ChartDisplay = ({ collection1, collection2, layout, loading }) => {
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            const collectionName = context.dataset.label;
-            const price = context.parsed.y;
-            return `${collectionName}: ${price} ETH`;
-          },
-          afterLabel: function(context) {
-            const date = new Date(context.parsed.x);
-            return `Date: ${date.toLocaleDateString()}`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-          displayFormats: {
-            day: 'MMM dd'
-          }
-        },
-        title: {
-          display: true,
-          text: 'Date'
-        }
-      },
-      y: {
-        beginAtZero: false,
-        title: {
-          display: true,
-          text: 'Floor Price (ETH)'
-        },
-        ticks: {
-          callback: function(value) {
-            return value + ' ETH';
-          }
-        }
-      }
-    },
-  }), []);
-
-  const prepareChartData = (collections) => {
-    const datasets = [];
-    const colors = ['#8b5cf6', '#10b981']; // Purple and green
-    
-    collections.forEach((collection, index) => {
-      if (collection && collection.data) {
-        const data = collection.data.map(point => ({
-          x: new Date(point.timestamp),
-          y: parseFloat(point.floor_price)
-        }));
-
-        datasets.push({
-          label: collection.name,
-          data: data,
-          borderColor: colors[index],
-          backgroundColor: colors[index] + '20',
-          tension: 0.1,
-          fill: false,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-        });
-      }
-    });
-
-    return { datasets };
-  };
-
-  const renderChart = (collections, title) => {
-    const hasData = collections.some(c => c && c.data && c.data.length > 0);
-    
-    if (!hasData) {
-      return (
-        <div className="chart-placeholder">
-          <div className="placeholder-content">
-            <h3>{title}</h3>
-            <p>No data to display</p>
-            <span>Search for collections to see their floor price charts</span>
-          </div>
-        </div>
-      );
-    }
-
-    const chartData = prepareChartData(collections);
-    
-    return (
-      <div className="chart-wrapper">
-        <h3>{title}</h3>
-        <div className="chart-canvas-container">
-          <Line data={chartData} options={chartOptions} />
-        </div>
-      </div>
-    );
-  };
-
-  const renderLoadingState = (collectionName) => (
-    <div className="chart-loading">
-      <div className="loading-spinner"></div>
-      <p>Loading {collectionName} data...</p>
+const ChartDisplay = ({ collection, collection2, title, loading, error, timeframe, onRangeChange, isComparison }) => {
+  const renderLoadingState = () => (
+    <div className="flex flex-col items-center justify-center h-full w-full gap-4" style={{ minHeight: '350px' }}>
+      <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-black text-lg font-medium text-center px-6">Loading collection data...</p>
     </div>
   );
 
-  if (layout === 'horizontal') {
-    return (
-      <div className="charts-horizontal">
-        <div className="chart-section">
-          {loading.collection1 && renderLoadingState('first collection')}
-          {!loading.collection1 && renderChart([collection1], collection1?.name || 'Collection 1')}
-        </div>
-        <div className="chart-section">
-          {loading.collection2 && renderLoadingState('second collection')}
-          {!loading.collection2 && renderChart([collection2], collection2?.name || 'Collection 2')}
-        </div>
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center justify-center h-full w-full gap-4" style={{ minHeight: '350px' }}>
+      <div className="text-gray-400 text-6xl">
+        <span className="material-symbols-outlined text-6xl">search</span>
       </div>
-    );
-  }
+      <p className="text-gray-600 text-lg font-medium text-center px-6">Select a collection to view its floor price chart</p>
+    </div>
+  );
 
-  // Vertical layout or combined view
-  if (collection1 && collection2 && !loading.collection1 && !loading.collection2) {
-    // Show combined chart when both collections are loaded
-    return (
-      <div className="charts-vertical">
-        <div className="chart-section full-width">
-          {renderChart([collection1, collection2], 'Floor Price Comparison')}
-        </div>
+  const renderErrorState = () => (
+    <div className="flex flex-col items-center justify-center h-full w-full gap-4" style={{ minHeight: '350px' }}>
+      <div className="text-red-500 text-6xl">
+        <span className="material-symbols-outlined text-6xl">error</span>
       </div>
-    );
-  }
+      <p className="text-red-600 text-lg font-medium text-center px-6">{error}</p>
+    </div>
+  );
 
-  // Show individual charts in vertical layout
+  const getFloorPrice = (collectionData = collection) => {
+    if (!collectionData?.data || collectionData.data.length === 0) return null;
+    const latestData = collectionData.data[collectionData.data.length - 1];
+    return latestData?.floorEth || 0;
+  };
+
+  const getPriceChange = (collectionData = collection) => {
+    if (!collectionData?.data || collectionData.data.length < 2) return null;
+    const latestPrice = collectionData.data[collectionData.data.length - 1]?.floorEth || 0;
+    const previousPrice = collectionData.data[0]?.floorEth || 0;
+    if (previousPrice === 0) return null;
+    return ((latestPrice - previousPrice) / previousPrice * 100);
+  };
+
+  // Handle comparison view (stacked layout with both collections)
+  if (isComparison) {
+    const collections = [collection, collection2].filter(Boolean);
+    
   return (
-    <div className="charts-vertical">
-      <div className="chart-section">
-        {loading.collection1 && renderLoadingState('first collection')}
-        {!loading.collection1 && renderChart([collection1], collection1?.name || 'Collection 1')}
+    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white shadow-[8px_8px_0px_#000000]">
+      <div className="flex flex-col border-b-2 border-black px-6 py-4 flex-shrink-0">
+        <p className="text-black text-lg font-bold leading-normal">{collections.map(c => c?.name).filter(Boolean).join(' vs ') || 'Floor Price Comparison'}</p>
       </div>
-      <div className="chart-section">
-        {loading.collection2 && renderLoadingState('second collection')}
-        {!loading.collection2 && renderChart([collection2], collection2?.name || 'Collection 2')}
+      
+      <div className="flex flex-1">
+        {loading ? (
+          <div className="flex flex-1">{renderLoadingState()}</div>
+        ) : error ? (
+          <div className="flex flex-1">{renderErrorState()}</div>
+        ) : collections.length === 0 ? (
+          <div className="flex flex-1">{renderEmptyState()}</div>
+        ) : (
+          <div className="chart-canvas-container flex-1">
+            <TradingViewChart
+              collections={collections}
+              title={title}
+              onRangeChange={onRangeChange}
+              height={450}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+  }
+
+  // Handle individual collection view (side-by-side layout)
+  const floorPrice = getFloorPrice();
+  const priceChange = getPriceChange();
+
+  return (
+    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white shadow-[8px_8px_0px_#000000]">
+      <div className="flex flex-col border-b-2 border-black px-6 py-4 flex-shrink-0">
+        <p className="text-black text-lg font-bold leading-normal">{collection?.name || title}</p>
+      </div>
+      <div className="flex flex-1">
+        {loading ? (
+          <div className="flex flex-1">{renderLoadingState()}</div>
+        ) : error ? (
+          <div className="flex flex-1">{renderErrorState()}</div>
+        ) : !collection ? (
+          <div className="flex flex-1">{renderEmptyState()}</div>
+        ) : (
+          <div className="chart-canvas-container flex-1">
+            <TradingViewChart
+              collections={[collection]}
+              title={title}
+              onRangeChange={onRangeChange}
+              height={420}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

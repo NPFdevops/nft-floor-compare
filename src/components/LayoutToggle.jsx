@@ -2,32 +2,31 @@ import React from 'react';
 
 const LayoutToggle = ({ layout, onLayoutChange }) => {
   return (
-    <div className="layout-toggle">
-      <label className="toggle-label">Layout:</label>
-      <div className="toggle-buttons">
-        <button
-          className={`toggle-button ${layout === 'horizontal' ? 'active' : ''}`}
-          onClick={() => onLayoutChange('horizontal')}
-          aria-label="Horizontal layout"
-        >
-          <svg width="20" height="16" viewBox="0 0 20 16" fill="currentColor">
-            <rect x="0" y="2" width="8" height="12" rx="1" />
-            <rect x="10" y="2" width="8" height="12" rx="1" />
-          </svg>
-          <span>Side by Side</span>
-        </button>
-        
-        <button
-          className={`toggle-button ${layout === 'vertical' ? 'active' : ''}`}
-          onClick={() => onLayoutChange('vertical')}
-          aria-label="Vertical layout"
-        >
-          <svg width="16" height="20" viewBox="0 0 16 20" fill="currentColor">
-            <rect x="2" y="0" width="12" height="8" rx="1" />
-            <rect x="2" y="10" width="12" height="8" rx="1" />
-          </svg>
-          <span>Stacked</span>
-        </button>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+      <p className="text-sm font-bold text-black whitespace-nowrap">Layout:</p>
+      <div className="flex h-10 items-center rounded-none border-2 border-black p-0.5">
+        <label className="flex cursor-pointer h-full w-20 sm:w-24 items-center justify-center overflow-hidden px-1 sm:px-2 has-[:checked]:bg-[var(--accent-color)] has-[:checked]:text-black text-black text-xs sm:text-sm font-bold leading-normal transition-colors">
+          <span className="truncate">Side by side</span>
+          <input 
+            className="invisible w-0" 
+            name="layout" 
+            type="radio" 
+            value="horizontal"
+            checked={layout === 'horizontal'}
+            onChange={() => onLayoutChange('horizontal')}
+          />
+        </label>
+        <label className="flex cursor-pointer h-full w-20 sm:w-24 items-center justify-center overflow-hidden px-1 sm:px-2 has-[:checked]:bg-[var(--accent-color)] has-[:checked]:text-black text-black text-xs sm:text-sm font-bold leading-normal transition-colors">
+          <span className="truncate">Stacked</span>
+          <input 
+            className="invisible w-0" 
+            name="layout" 
+            type="radio" 
+            value="vertical"
+            checked={layout === 'vertical'}
+            onChange={() => onLayoutChange('vertical')}
+          />
+        </label>
       </div>
     </div>
   );
