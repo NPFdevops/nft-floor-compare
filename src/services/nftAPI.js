@@ -1,16 +1,47 @@
 import axios from 'axios';
 import { cacheService } from './cacheService';
 
-const API_BASE_URL = `https://${import.meta.env.VITE_RAPIDAPI_HOST}`;
+// Environment variables validation
+const RAPIDAPI_HOST = import.meta.env.VITE_RAPIDAPI_HOST;
 const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY;
+
+// Validate required environment variables
+const validateEnvironmentVariables = () => {
+  const missing = [];
+  
+  if (!RAPIDAPI_HOST) missing.push('VITE_RAPIDAPI_HOST');
+  if (!RAPIDAPI_KEY) missing.push('VITE_RAPIDAPI_KEY');
+  
+  if (missing.length > 0) {
+    const error = `Missing required environment variables: ${missing.join(', ')}`;
+    console.error('🔴 Environment Variables Error:', error);
+    console.error('💡 Make sure to set these variables in Vercel dashboard or your .env file');
+    throw new Error(error);
+  }
+  
+  console.log('✅ Environment variables validated successfully');
+  console.log('🔑 API Host:', RAPIDAPI_HOST);
+  console.log('🔑 API Key:', RAPIDAPI_KEY ? `${RAPIDAPI_KEY.substring(0, 8)}...` : 'Not set');
+};
+
+// Validate on module load
+try {
+  validateEnvironmentVariables();
+} catch (error) {
+  console.error('❌ API service initialization failed:', error.message);
+}
+
+const API_BASE_URL = `https://${RAPIDAPI_HOST}`;
 
 // Create axios instance with RapidAPI headers
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'X-RapidAPI-Key': RAPIDAPI_KEY,
-    'X-RapidAPI-Host': import.meta.env.VITE_RAPIDAPI_HOST
-  }
+    'X-RapidAPI-Host': RAPIDAPI_HOST,
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000 // 30 second timeout
 });
 
 /**
@@ -143,11 +174,63 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
     
     return result;
   } catch (error) {
-    console.error(`Error fetching floor price for ${collectionSlug}:`, error);
+    console.error(`❌ Error fetching floor price for ${collectionSlug}:`, error);
+    
+    // Enhanced error handling
+    let errorMessage = 'Unknown error occurred';
+    let errorDetails = {};
+    
+    if (error.code === 'ENOTFOUND') {
+      errorMessage = 'DNS resolution failed - Check if the API host is correct';
+      errorDetails = { host: RAPIDAPI_HOST };
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Request timeout - API took too long to respond';
+    } else if (error.response) {
+      // Server responded with error status
+      const status = error.response.status;
+      errorMessage = `API Error (${status}): ${error.response.data?.message || error.response.statusText}`;
+      errorDetails = {
+        status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      };
+      
+      // Specific handling for common API errors
+      if (status === 401) {
+        errorMessage = 'Authentication failed - Check your RapidAPI key';
+      } else if (status === 403) {
+        errorMessage = 'Access forbidden - Check API permissions or subscription status';
+      } else if (status === 429) {
+        errorMessage = 'Rate limit exceeded - Too many requests';
+      } else if (status === 404) {
+        errorMessage = `Collection '${collectionSlug}' not found or endpoint unavailable`;
+      }
+    } else if (error.request) {
+      // Network error
+      errorMessage = 'Network error - Unable to reach the API';
+      errorDetails = { 
+        code: error.code,
+        message: error.message,
+        baseURL: API_BASE_URL
+      };
+    } else {
+      // Other error
+      errorMessage = error.message || 'Request setup error';
+    }
+    
+    console.error('🔍 Error details:', {
+      message: errorMessage,
+      details: errorDetails,
+      originalError: error.message,
+      apiBaseUrl: API_BASE_URL,
+      hasApiKey: !!RAPIDAPI_KEY
+    });
     
     return {
       success: false,
-      error: error.response?.data?.message || error.message,
+      error: errorMessage,
+      errorDetails,
       data: null
     };
   }

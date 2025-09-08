@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { cacheService } from '../services/cacheService';
+import ApiHealthCheck from './ApiHealthCheck';
 
 const CacheStats = () => {
   const [stats, setStats] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [showHealthCheck, setShowHealthCheck] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
@@ -71,7 +73,7 @@ const CacheStats = () => {
         </div>
       )}
       
-      <div className="mt-3 pt-2 border-t border-gray-700">
+      <div className="mt-3 pt-2 border-t border-gray-700 flex gap-2">
         <button
           onClick={() => {
             cacheService.clear();
@@ -81,7 +83,18 @@ const CacheStats = () => {
         >
           Clear Cache
         </button>
+        <button
+          onClick={() => setShowHealthCheck(true)}
+          className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs transition-colors"
+          title="Check API connectivity"
+        >
+          🩺 API Health
+        </button>
       </div>
+      
+      {showHealthCheck && (
+        <ApiHealthCheck onClose={() => setShowHealthCheck(false)} />
+      )}
     </div>
   );
 };

@@ -1,123 +1,219 @@
-# NFT Floor Price Compare
+# NFT Floor Price Compare 📊
 
-A lightweight web application for NFT collectors and researchers to visually compare floor price charts of two collections side-by-side. Users can search for two collections via dedicated search bars, fetch floor price history from the nftpricefloor API, and toggle between vertical or horizontal layouts. One-click screenshot and share options help users communicate insights quickly.
+A React-based web application that allows users to visually compare floor price charts of two NFT collections side-by-side. The app integrates with the NFT Price Floor API to fetch real-time and historical price data.
 
-![NFT Floor Compare Screenshot](https://via.placeholder.com/800x400/8b5cf6/ffffff?text=NFT+Floor+Compare)
+![NFT Floor Compare App](https://img.shields.io/badge/React-19-blue) ![Vite](https://img.shields.io/badge/Vite-5.0-green) ![Chart.js](https://img.shields.io/badge/Chart.js-4.0-red)
 
-## Features
+## ✨ Features
 
-✨ **Side-by-Side Comparison**: Compare floor price charts of two NFT collections simultaneously
+- **📈 Side-by-Side Chart Comparison**: Compare two NFT collections simultaneously
+- **📱 Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **🎯 Smart Navigation**: Centered desktop header + mobile bottom navbar
+- **🔍 Intelligent Search**: Autocomplete search with top NFT collections
+- **📅 Flexible Timeframes**: 30D, 90D, 1Y, YTD options with custom date ranges
+- **📸 Screenshot Sharing**: Capture and share comparison charts
+- **🔗 URL Sharing**: Shareable links with embedded parameters
+- **💾 Smart Caching**: Optimized API calls with intelligent caching
+- **⚡ Real-time Data**: Live floor price data from NFT Price Floor API
 
-🔍 **Smart Search**: Search for collections with autocomplete suggestions
+## 🛠️ Tech Stack
 
-📊 **Interactive Charts**: Powered by Chart.js with responsive design and hover tooltips
+- **Frontend**: React 19, Vite 5.x
+- **Charts**: Chart.js with react-chartjs-2
+- **Styling**: Tailwind CSS
+- **HTTP Client**: Axios
+- **State Management**: React Hooks
+- **Routing**: React Router DOM
+- **Build Tool**: Vite
+- **Deployment**: Vercel
 
-📱 **Responsive Layout**: Toggle between horizontal and vertical layouts, mobile-friendly
-
-📸 **Screenshot & Share**: Capture and download comparisons with one click
-
-🎨 **Modern UI**: Clean, professional interface with smooth animations
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 16.x or higher
-- npm or yarn package manager
+- Node.js 18+ 
+- npm or yarn
+- RapidAPI account with NFT Price Floor API access
 
-### Installation
+### 1. Clone the Repository
 
-1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/NPFdevops/nft-floor-compare.git
 cd nft-floor-compare
 ```
 
-2. Install dependencies:
+### 2. Install Dependencies
+
 ```bash
 npm install
 ```
 
-3. Start the development server:
+### 3. Environment Setup
+
+```bash
+# Copy the environment template
+cp .env.example .env
+
+# Edit .env and add your RapidAPI credentials
+VITE_RAPIDAPI_KEY=your_rapidapi_key_here
+VITE_RAPIDAPI_HOST=nftpf-api-v0.p.rapidapi.com
+```
+
+**Getting RapidAPI Credentials:**
+1. Sign up at [RapidAPI](https://rapidapi.com)
+2. Subscribe to [NFT Price Floor API](https://rapidapi.com/nftpf-api-v0.p.rapidapi.com)
+3. Get your API key from the dashboard
+
+### 4. Run Development Server
+
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:5173`
+Visit [http://localhost:5173](http://localhost:5173) to view the app.
 
-### Building for Production
+### 5. Build for Production
 
 ```bash
 npm run build
+npm run preview  # Preview production build
 ```
 
-The built files will be in the `dist` directory.
+## 🌐 Deployment
 
-### Preview Production Build
+### Deploy to Vercel (Recommended)
 
+#### Method 1: Vercel CLI
 ```bash
-npm run preview
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+
+# Set environment variables in Vercel dashboard or via CLI
+vercel env add VITE_RAPIDAPI_KEY
+vercel env add VITE_RAPIDAPI_HOST
 ```
 
-## Usage
+#### Method 2: Vercel Dashboard
+1. Connect your GitHub repository to Vercel
+2. Import the project
+3. **⚠️ CRITICAL**: Add environment variables in Vercel dashboard:
+   - `VITE_RAPIDAPI_KEY`: Your RapidAPI key
+   - `VITE_RAPIDAPI_HOST`: `nftpf-api-v0.p.rapidapi.com`
+4. Deploy
 
-1. **Search Collections**: Use the search bars to find NFT collections. The app provides autocomplete suggestions as you type.
+**Environment Variables Setup in Vercel:**
+1. Go to your project dashboard
+2. Navigate to Settings → Environment Variables
+3. Add both variables for all environments (Production, Preview, Development)
 
-2. **View Charts**: Once collections are selected, their floor price charts will appear automatically.
+### Other Deployment Platforms
 
-3. **Toggle Layout**: Switch between horizontal (side-by-side) and vertical (stacked) layouts using the layout toggle buttons.
+#### Netlify
+```bash
+# Build command
+npm run build
 
-4. **Screenshot**: Click the "Screenshot" button to capture and download the current comparison as a PNG image.
+# Publish directory
+dist
 
-5. **Share**: Use the "Share" button to share your comparison via native sharing options (where supported) or copy text to clipboard.
+# Environment variables (in Netlify dashboard)
+VITE_RAPIDAPI_KEY=your_key
+VITE_RAPIDAPI_HOST=nftpf-api-v0.p.rapidapi.com
+```
 
-## Technology Stack
+## 🔧 Configuration
 
-- **Frontend**: React 19, Vite
-- **Charts**: Chart.js with react-chartjs-2
-- **Screenshots**: html2canvas
-- **HTTP Client**: Axios
-- **Styling**: Custom CSS with CSS variables
-- **Date Handling**: date-fns with chartjs-adapter-date-fns
+### Environment Variables
 
-## API Integration
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `VITE_RAPIDAPI_KEY` | Your RapidAPI key for NFT Price Floor API | ✅ Yes | - |
+| `VITE_RAPIDAPI_HOST` | RapidAPI host domain | ✅ Yes | `nftpf-api-v0.p.rapidapi.com` |
 
-This application integrates with the NFT Price Floor API to fetch:
-- Collection search results with autocomplete
-- Historical floor price data for selected time periods
-- Current floor price information
+### API Configuration
 
-### API Endpoints Used
+The app uses the NFT Price Floor API through RapidAPI:
+- **Endpoint Pattern**: `/projects/{slug}/history/pricefloor/{granularity}`
+- **Supported Granularities**: `1d`, `1h`, `30m`
+- **Date Range**: Configurable start/end timestamps
+- **Response Format**: Arrays of timestamps, floorEth, floorUsd, volume data
 
-- `GET /v1/search/collections` - Search for collections
-- `GET /v1/collection/{slug}/floor-price-history` - Get historical floor prices
-- `GET /v1/collection/{slug}/current` - Get current floor price
-
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 src/
 ├── components/           # React components
 │   ├── SearchBar.jsx    # Collection search with autocomplete
-│   ├── ChartDisplay.jsx # Chart rendering and layout
-│   ├── LayoutToggle.jsx # Layout switching controls
-│   └── ScreenshotShare.jsx # Screenshot and sharing functionality
-├── services/            # API integration
-│   └── nftAPI.js       # NFT Price Floor API client
-├── App.jsx             # Main application component
-├── App.css             # Application styles
-├── main.jsx            # React entry point
-└── index.css           # Global styles and CSS variables
+│   ├── ChartDisplay.jsx # Chart rendering with Chart.js
+│   ├── LayoutToggle.jsx # Horizontal/vertical layout switcher
+│   ├── TimeframeSelector.jsx # Date range selection
+│   ├── ApplyButton.jsx  # Apply changes button
+│   └── ScreenshotShare.jsx # Screenshot and sharing
+├── services/            # API and caching services
+│   ├── nftAPI.js       # Main API service
+│   └── cacheService.js # Smart caching layer
+├── utils/              # Utility functions
+│   ├── dateUtils.js    # Date manipulation helpers
+│   └── urlUtils.js     # URL parameter handling
+├── data/               # Static data
+│   └── collections.js  # Top NFT collections list
+└── assets/             # Images and static files
+    ├── NFTPriceFloor_logo.png
+    └── nftpf_logo_mobile.png
 ```
 
-## Browser Support
+## 🐛 Troubleshooting
 
-- Chrome/Edge 88+
-- Firefox 85+
-- Safari 14+
-- Mobile browsers with modern JavaScript support
+### Common Issues
 
-## Contributing
+#### "Network Error" in Production
+
+**Symptoms**: API calls fail with network errors on deployment
+
+**Solutions**:
+1. **Check Environment Variables**: Ensure `VITE_RAPIDAPI_KEY` and `VITE_RAPIDAPI_HOST` are set in your deployment platform
+2. **Verify API Key**: Test your RapidAPI key in Postman or curl
+3. **Check API Subscription**: Ensure your RapidAPI subscription is active
+4. **Review Browser Console**: Check for CORS or authentication errors
+
+```bash
+# Test API key locally
+curl -H "X-RapidAPI-Key: YOUR_KEY" \
+     -H "X-RapidAPI-Host: nftpf-api-v0.p.rapidapi.com" \
+     "https://nftpf-api-v0.p.rapidapi.com/projects/azuki/history/pricefloor/1d"
+```
+
+#### Environment Variables Not Loading
+
+**Vercel**:
+- Variables must be prefixed with `VITE_`
+- Add to all environments (Production, Preview, Development)
+- Redeploy after adding variables
+
+**Local Development**:
+- Ensure `.env` file is in project root
+- Restart development server after changes
+- Check `.env` is not in `.gitignore`
+
+#### Chart Not Rendering
+
+**Check**:
+- API response format in browser console
+- Date/timestamp formatting
+- Chart.js version compatibility
+
+### Debug Mode
+
+Enable detailed logging by opening browser console. The app logs:
+- API requests and responses
+- Cache hits/misses
+- Environment variable validation
+- Error details with suggestions
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -125,22 +221,29 @@ src/
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
+## 📄 License
 
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- [NFT Price Floor API](https://api.nftpricefloor.com) for providing the floor price data
-- [Chart.js](https://www.chartjs.org/) for the excellent charting library
-- [html2canvas](https://html2canvas.hertzen.com/) for screenshot functionality
-- [React](https://react.dev/) for the UI framework
-- [Vite](https://vitejs.dev/) for the build tool
+- [NFT Price Floor API](https://rapidapi.com/nftpf-api-v0.p.rapidapi.com) for providing NFT data
+- [Chart.js](https://www.chartjs.org/) for excellent charting capabilities
+- [React](https://reactjs.org/) and [Vite](https://vitejs.dev/) for the development experience
 
-## Support
+## 📞 Support
 
-If you encounter any issues or have questions, please [open an issue](https://github.com/your-username/nft-floor-compare/issues) on GitHub.
+If you encounter any issues:
+
+1. Check the [Troubleshooting](#-troubleshooting) section
+2. Review browser console for error messages
+3. Verify environment variables are correctly set
+4. Open an issue on GitHub with:
+   - Error description
+   - Browser console logs
+   - Deployment platform
+   - Steps to reproduce
 
 ---
 
-Made with ❤️ for the NFT community
+**Made with ❤️ for the NFT community**
