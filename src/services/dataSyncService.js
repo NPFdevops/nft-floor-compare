@@ -12,11 +12,12 @@ class DataSyncService {
   constructor() {
     this.db = getDatabase();
     this.config = {
-      maxCollections: 500,        // Max collections to sync daily
+      maxCollections: 250,        // Top 250 collections (per your methodology)
       batchSize: 10,              // Process in batches to respect rate limits
       delayBetweenBatches: 2000,  // 2 second delay between batches
       maxRetries: 3,              // Max retries per collection
       timeoutPerCollection: 60000, // 60s timeout per collection
+      dataRetentionDays: 365,     // Keep 1 year of data (per your methodology)
     };
 
     console.log('📊 Data Sync Service initialized');

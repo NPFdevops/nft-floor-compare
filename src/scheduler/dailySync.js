@@ -180,7 +180,7 @@ class DailySyncScheduler {
     console.log('🧹 Starting weekly cleanup...');
     
     try {
-      // Clean old price data (keep 1 year)
+      // Clean old price data (keep 1 year as per methodology)
       const cleanedRecords = this.db.cleanOldData(365);
       
       // Clean old sync logs (keep 30 days)

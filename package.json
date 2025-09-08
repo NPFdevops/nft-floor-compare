@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "sync:manual": "node src/scripts/manualSync.js",
     "sync:initial": "node src/scripts/initialSetup.js",
+    "sync:full-year": "node src/scripts/fullYearSync.js",
     "db:status": "node src/scripts/dbStatus.js"
   },
   "keywords": [],

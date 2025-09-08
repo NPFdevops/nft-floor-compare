@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { cacheService } from './cacheService';
+import { cacheService } from './cacheService.js';
 
 // Environment variables validation
 const RAPIDAPI_HOST = import.meta.env.VITE_RAPIDAPI_HOST;

@@ -48,36 +48,37 @@ async function runInitialSetup() {
     console.log();
 
     // Step 4: Ask user about historical data sync
-    console.log('📊 Step 3: Historical data sync options:');
-    console.log('   1. Quick sync (last 7 days, top 50 collections) - ~5-10 minutes');
-    console.log('   2. Standard sync (last 30 days, top 100 collections) - ~15-30 minutes');
-    console.log('   3. Full sync (last 90 days, top 200 collections) - ~45-90 minutes');
-    console.log('   4. Skip historical sync (only run daily sync going forward)');
+    console.log('📊 Step 3: Historical data sync options (Top 250 Collections):');
+    console.log('   1. Quick start (last 7 days) - ~10-15 minutes');
+    console.log('   2. Standard sync (last 30 days) - ~30-45 minutes');
+    console.log('   3. Extended sync (last 90 days) - ~60-90 minutes');
+    console.log('   4. Full methodology (1 year of data) - ~2-4 hours');
+    console.log('   5. Skip historical sync (only run daily sync going forward)');
     
-    const choice = await askUser('\n   Choose an option (1-4): ');
+    const choice = await askUser('\n   Choose an option (1-5): ');
     
-    let daysBack, maxCollections;
+    let daysBack, maxCollections = 250; // Always use top 250 collections
     switch (choice) {
       case '1':
         daysBack = 7;
-        maxCollections = 50;
         break;
       case '2':
         daysBack = 30;
-        maxCollections = 100;
         break;
       case '3':
         daysBack = 90;
-        maxCollections = 200;
         break;
       case '4':
+        daysBack = 365;
+        console.log('🎯 Full 1-year sync selected - this will take several hours but gives you complete historical data');
+        break;
+      case '5':
         console.log('⏭️  Skipping historical sync');
         daysBack = 0;
         break;
       default:
-        console.log('📋 Using default: Standard sync (30 days, 100 collections)');
+        console.log('📋 Using default: Standard sync (30 days, 250 collections)');
         daysBack = 30;
-        maxCollections = 100;
     }
 
     // Step 5: Perform historical sync if requested

@@ -23,20 +23,30 @@ New dependencies added:
 - `better-sqlite3` - SQLite database driver
 - `node-cron` - Scheduled job management
 
-### 2. Run Initial Setup
+### 2. Choose Your Setup Strategy
 
+**Quick Setup (Recommended for testing):**
 ```bash
 npm run sync:initial
 ```
 
-This interactive script will:
-- Initialize the SQLite database
-- Sync the collections list
-- Ask you to choose historical data sync options:
-  - **Quick** (7 days, 50 collections) - ~5-10 minutes
-  - **Standard** (30 days, 100 collections) - ~15-30 minutes  
-  - **Full** (90 days, 200 collections) - ~45-90 minutes
-  - **Skip** (only future daily syncs)
+Options for top 250 collections:
+- **Quick start** (7 days) - ~10-15 minutes
+- **Standard** (30 days) - ~30-45 minutes  
+- **Extended** (90 days) - ~60-90 minutes
+- **Full methodology** (1 year) - ~2-4 hours
+- **Skip** (only future daily syncs)
+
+**Full Methodology (Complete 1-year setup):**
+```bash
+npm run sync:full-year
+```
+
+This implements the complete methodology:
+- **Top 250 collections** (based on rankings)
+- **Full 1 year** of historical data
+- **Optimized batching** for large dataset
+- **Progress tracking** and resumable sync
 
 ### 3. Check Status
 
@@ -165,17 +175,25 @@ data/
 └── nft_floor_data.db          # SQLite database file (created automatically)
 ```
 
-## 🔄 How It Works
+## 🔄 How It Works (The Methodology)
 
-### 1. Daily Sync Process
+### 1. Initial Setup (One-time)
+
+**Complete Methodology**:
+1. **Collections Discovery**: Fetches top 250 NFT collections by ranking
+2. **Historical Data**: Downloads 1 full year (365 days) of price history
+3. **Optimized Storage**: Stores efficiently in SQLite with proper indexing
+4. **Data Validation**: Ensures data quality and completeness
+
+### 2. Daily Maintenance (Automatic)
 
 Every day at 2:00 AM UTC:
 
-1. **Collections Sync**: Updates the list of top NFT collections
-2. **Price Sync**: Fetches yesterday's price data for all active collections
-3. **Batch Processing**: Uses rate limiting and retry logic
-4. **Data Storage**: Stores in local SQLite database
-5. **Cleanup**: Removes old data and optimizes database
+1. **Collections Update**: Refreshes the top 250 collection rankings
+2. **Daily Price Sync**: Fetches yesterday's price data for all 250 collections
+3. **Smart Processing**: Uses rate limiting and retry logic
+4. **Data Storage**: Adds new records to local SQLite database
+5. **Automatic Cleanup**: Removes data older than 1 year to maintain the rolling window
 
 ### 2. Local API Service
 
@@ -192,6 +210,7 @@ When your React app requests chart data:
 - **Progressive Backoff**: 1s → 2s → 5s → 10s → 30s delays
 - **Request Queuing**: Manages multiple requests efficiently
 - **Error Recovery**: Comprehensive retry logic and user feedback
+- **Rolling Window**: Maintains exactly 1 year of data with automatic cleanup
 
 ## 📈 Benefits
 
