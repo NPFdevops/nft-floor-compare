@@ -10,7 +10,7 @@ import CacheStats from './components/CacheStats';
 import { fetchFloorPriceHistory } from './services/nftAPI';
 import { getDefaultDateRange, dateToTimestamp, getOptimalGranularity, isValidDateRange } from './utils/dateUtils';
 import { parseUrlParams, createUrlParams } from './utils/urlUtils';
-import { TOP_COLLECTIONS } from './data/collections';
+import { collectionsService } from './services/collectionsService';
 import logoImage from './assets/NFTPriceFloor_logo.png';
 import mobileLogoImage from './assets/nftpf_logo_mobile.png';
 
@@ -137,7 +137,7 @@ function App() {
 
   // Helper function to get proper collection name from slug
   const getCollectionName = (slug) => {
-    const collection = TOP_COLLECTIONS.find(c => c.slug === slug);
+    const collection = collectionsService.findBySlug(slug);
     return collection ? collection.name : slug;
   };
 

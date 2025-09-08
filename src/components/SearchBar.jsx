@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { TOP_COLLECTIONS } from '../data/collections';
+import { collectionsService } from '../services/collectionsService';
 
 const SearchBar = ({ 
   placeholder, 
@@ -12,8 +12,29 @@ const SearchBar = ({
   const [query, setQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [filteredCollections, setFilteredCollections] = useState([]);
+  const [collectionsState, setCollectionsState] = useState({
+    collections: [],
+    isLoading: false,
+    error: null
+  });
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Subscribe to collections service updates
+  useEffect(() => {
+    const unsubscribe = collectionsService.subscribe((state) => {
+      setCollectionsState(state);
+    });
+
+    // Initialize with current state
+    setCollectionsState({
+      collections: collectionsService.getCollections(),
+      isLoading: collectionsService.getLoadingState(),
+      error: collectionsService.getError()
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (selectedCollection) {
@@ -40,15 +61,9 @@ const SearchBar = ({
     const value = e.target.value;
     setQuery(value);
 
-    // Filter collections based on search query
-    if (value.trim()) {
-      const filtered = TOP_COLLECTIONS.filter(collection =>
-        collection.name.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 20);
-      setFilteredCollections(filtered);
-    } else {
-      setFilteredCollections(TOP_COLLECTIONS.slice(0, 20));
-    }
+    // Filter collections using the collections service
+    const filtered = collectionsService.searchCollections(value, 20);
+    setFilteredCollections(filtered);
     
     // Keep dropdown open while typing
     if (!isDropdownOpen) {
@@ -59,7 +74,8 @@ const SearchBar = ({
   const handleInputClick = () => {
     setIsDropdownOpen(true);
     if (!query.trim()) {
-      setFilteredCollections(TOP_COLLECTIONS.slice(0, 20));
+      const filtered = collectionsService.searchCollections('', 20);
+      setFilteredCollections(filtered);
     }
   };
 
@@ -102,13 +118,13 @@ const SearchBar = ({
           autoComplete="off"
         />
         
-        {loading && (
+        {(loading || collectionsState.isLoading) && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
           </div>
         )}
         
-        {query && !loading && (
+        {query && !loading && !collectionsState.isLoading && (
           <button
             type="button"
             onClick={handleClear}
@@ -120,41 +136,55 @@ const SearchBar = ({
         )}
       </form>
 
-      {isDropdownOpen && filteredCollections.length > 0 && (
+      {isDropdownOpen && (filteredCollections.length > 0 || collectionsState.isLoading) && (
         <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-black shadow-lg max-h-96 overflow-hidden" style={{fontFamily: 'Space Grotesk, sans-serif'}}>
           <div className="px-4 py-3 border-b-2 border-black bg-gray-50">
-            <span className="text-black font-bold text-sm">Collections</span>
+            <span className="text-black font-bold text-sm">
+              Collections {collectionsState.collections.length > 0 && `(${collectionsState.collections.length})`}
+            </span>
           </div>
           <div className="max-h-80 overflow-y-auto">
-            {filteredCollections.map((collection) => (
-              <div
-                key={collection.slug}
-                className="flex items-center p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-200 last:border-b-0"
-                onClick={() => handleCollectionSelect(collection)}
-              >
-                <div className="w-10 h-10 mr-3 flex-shrink-0">
-                  <img 
-                    src={collection.image} 
-                    alt={collection.name}
-                    className="w-full h-full object-cover rounded-lg border border-gray-300"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="flex-1 min-w-0 flex items-center justify-between">
-                  <span className="text-black font-medium text-sm truncate">{collection.name}</span>
-                  <span className="ml-2 px-2 py-1 text-xs font-bold text-black bg-yellow-400 border border-black rounded flex-shrink-0">
-                    #{collection.ranking}
-                  </span>
-                </div>
+            {collectionsState.isLoading && filteredCollections.length === 0 ? (
+              <div className="flex items-center justify-center p-6">
+                <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full mr-3"></div>
+                <span className="text-gray-600">Loading collections...</span>
               </div>
-            ))}
+            ) : (
+              filteredCollections.map((collection) => (
+                <div
+                  key={collection.slug}
+                  className="flex items-center p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-200 last:border-b-0"
+                  onClick={() => handleCollectionSelect(collection)}
+                >
+                  <div className="w-10 h-10 mr-3 flex-shrink-0">
+                    <img 
+                      src={collection.image} 
+                      alt={collection.name}
+                      className="w-full h-full object-cover rounded-lg border border-gray-300"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                    <span className="text-black font-medium text-sm truncate">{collection.name}</span>
+                    <span className="ml-2 px-2 py-1 text-xs font-bold text-black bg-yellow-400 border border-black rounded flex-shrink-0">
+                      #{collection.ranking}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
 
-      {error && (
+      {(error || collectionsState.error) && (
         <div className="mt-2 p-3 bg-red-100 border-2 border-red-500 rounded-none">
-          <p className="text-red-700 text-sm font-medium">{error}</p>
+          <p className="text-red-700 text-sm font-medium">
+            {error || collectionsState.error}
+            {collectionsState.error && (
+              <span className="block mt-1 text-xs">Using cached collections as fallback</span>
+            )}
+          </p>
         </div>
       )}
 

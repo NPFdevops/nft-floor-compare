@@ -269,6 +269,93 @@ export const searchCollections = async (query) => {
 };
 
 /**
+ * Fetch top collections from rankings-v2 endpoint with pagination
+ * @param {number} limit - Total number of collections to fetch (default: 500)
+ * @returns {Promise<Object>} Top collections data
+ */
+export const fetchTopCollections = async (limit = 500) => {
+  try {
+    console.log(`🔄 Fetching top ${limit} collections from projects API`);
+    
+    // Check cache first
+    const cacheKey = `top-collections-${limit}`;
+    const cachedData = await cacheService.get(cacheKey, '1h'); // Cache for 1 hour
+    if (cachedData) {
+      console.log(`✅ Using cached top collections data (${cachedData.collections?.length} collections)`);
+      return cachedData;
+    }
+    
+    console.log(`🌐 Making API request to fetch all collections...`);
+    const response = await apiClient.get('/projects');
+    
+    console.log(`📄 Received ${response.data?.length || 0} collections`);
+    
+    const allCollections = [];
+    if (response.data && Array.isArray(response.data)) {
+      response.data.forEach((collection) => {
+        // Transform API response to match our collection format
+        allCollections.push({
+          slug: collection.slug,
+          name: collection.name,
+          ranking: collection.ranking,
+          image: collection.imageBlur || `https://api.dicebear.com/7.x/shapes/svg?seed=${collection.slug}`,
+          floorPrice: collection.stats?.floorInfo?.currentFloorNative,
+          floorPriceUsd: collection.stats?.floorInfo?.currentFloorUsd,
+          volume: collection.stats?.salesTemporalityUsd?.volume?.val24h,
+          marketCap: collection.stats?.floorCapUsd,
+          totalSupply: collection.stats?.totalSupply,
+          owners: collection.stats?.totalOwners
+        });
+      });
+    }
+    
+    // Sort by ranking and limit to requested number
+    const topCollections = allCollections
+      .sort((a, b) => a.ranking - b.ranking)
+      .slice(0, limit);
+    
+    console.log(`✅ Successfully fetched ${topCollections.length} collections`);
+    console.log('Sample collections:', topCollections.slice(0, 3));
+    
+    const result = {
+      success: true,
+      collections: topCollections,
+      totalFetched: topCollections.length,
+      fetchedAt: Date.now()
+    };
+    
+    // Cache the result for 1 hour
+    await cacheService.set(cacheKey, result, '1h');
+    
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Error fetching top collections:', error);
+    
+    let errorMessage = 'Failed to fetch top collections';
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 404) {
+        errorMessage = 'Projects endpoint not found - API may have changed';
+      } else if (status === 429) {
+        errorMessage = 'Rate limit exceeded while fetching collections';
+      } else {
+        errorMessage = `API Error (${status}): ${error.response.data?.message || error.response.statusText}`;
+      }
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'Network error - Unable to reach projects API';
+    }
+    
+    return {
+      success: false,
+      error: errorMessage,
+      collections: [],
+      totalFetched: 0
+    };
+  }
+};
+
+/**
  * Get current floor price for a collection
  * This will use the latest data from the history endpoint
  * @param {string} collectionSlug - The collection identifier/slug
