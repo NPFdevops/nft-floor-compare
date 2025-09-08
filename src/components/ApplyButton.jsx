@@ -1,14 +1,22 @@
 import React from 'react';
 
 const ApplyButton = ({ onApply, disabled = false, loading = false, timeframe = null, hasPendingChanges = false }) => {
+  const handleClick = () => {
+    // Add haptic feedback on mobile
+    if (window.navigator && window.navigator.vibrate && !disabled && !loading) {
+      window.navigator.vibrate(25);
+    }
+    onApply();
+  };
+
   return (
     <button
       type="button"
-      onClick={onApply}
+      onClick={handleClick}
       disabled={disabled || loading}
-      className={`flex items-center justify-center px-4 sm:px-6 py-2 text-xs sm:text-sm font-bold leading-normal border-2 border-black transition-all duration-200 ${
+      className={`flex items-center justify-center px-4 sm:px-6 h-10 sm:h-10 text-xs sm:text-sm font-bold leading-normal border-2 border-black rounded-none transition-all duration-200 shadow-[4px_4px_0px_#000000] ${
         disabled || loading
-          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+          ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-[2px_2px_0px_#666666]'
           : hasPendingChanges
           ? 'bg-[var(--accent-color)] text-black hover:bg-opacity-80 hover:scale-105 active:scale-95'
           : 'bg-gray-300 text-gray-700 hover:bg-gray-400 hover:scale-105'

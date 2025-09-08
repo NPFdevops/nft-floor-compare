@@ -180,9 +180,12 @@ const SearchBar = ({
       {(error || collectionsState.error) && (
         <div className="mt-2 p-3 bg-red-100 border-2 border-red-500 rounded-none">
           <p className="text-red-700 text-sm font-medium">
-            {error || collectionsState.error}
+            Try again, please
             {collectionsState.error && (
               <span className="block mt-1 text-xs">Using cached collections as fallback</span>
+            )}
+            {error && (
+              <span className="block mt-1 text-xs opacity-75">{error}</span>
             )}
           </p>
         </div>

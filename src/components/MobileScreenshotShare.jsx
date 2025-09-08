@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import html2canvas from 'html2canvas';
 import { createShareableUrl, generateShareTitle } from '../utils/urlUtils';
-import './TradingViewChart.css';
 
-const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout }) => {
+const MobileScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
 
@@ -11,7 +10,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     const targetElement = document.getElementById(targetId);
     
     if (!targetElement) {
-      // Add haptic feedback for error
+      // Use iOS-style alert if available
       if (window.navigator && window.navigator.vibrate) {
         window.navigator.vibrate([100, 100, 100]);
       }
@@ -39,32 +38,51 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
       canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
         
-        // Trigger download with descriptive filename
+        // Generate filename
         const shareTitle = generateShareTitle({ collection1, collection2, timeframe });
-        const sanitizedTitle = shareTitle.replace(/[^a-z0-9\s-]/gi, '').replace(/\s+/g, '-').toLowerCase();
+        const sanitizedTitle = shareTitle.replace(/[^a-z0-9\\s-]/gi, '').replace(/\\s+/g, '-').toLowerCase();
         const filename = `${sanitizedTitle}-${new Date().toISOString().slice(0, 10)}.png`;
         
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up the URL after a delay
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-        }, 1000);
+        // Check if we can use native sharing (iOS Safari, Chrome mobile, etc.)
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })) {
+          const file = new File([blob], filename, { type: 'image/png' });
+          navigator.share({
+            title: shareTitle,
+            text: `${shareTitle} - NFT Floor Price Comparison`,
+            files: [file]
+          }).catch(error => {
+            console.error('Error sharing screenshot:', error);
+            fallbackDownload(url, filename);
+          });
+        } else {
+          // Fallback to download
+          fallbackDownload(url, filename);
+        }
       }, 'image/png');
 
     } catch (error) {
       console.error('Error capturing screenshot:', error);
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate([100, 100, 100]);
+      }
       alert('Failed to capture screenshot. Please try again.');
     } finally {
       setIsCapturing(false);
     }
   };
 
+  const fallbackDownload = (url, filename) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  };
 
   const shareUrl = () => {
     const shareTitle = generateShareTitle({ collection1, collection2, timeframe });
@@ -127,7 +145,8 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
   const showToast = (message) => {
     // Create a toast notification
     const toast = document.createElement('div');
-    toast.className = 'fixed top-4 left-4 right-4 bg-black bg-opacity-90 text-white text-sm font-medium px-4 py-3 rounded-xl z-50 text-center safe-area-top';
+    toast.className = 'fixed top-safe-area-inset-top left-4 right-4 bg-black bg-opacity-90 text-white text-sm font-medium px-4 py-3 rounded-xl z-50 text-center';
+    toast.style.top = 'env(safe-area-inset-top, 20px)';
     toast.textContent = message;
     
     document.body.appendChild(toast);
@@ -146,7 +165,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
       onClick={() => setShowActionSheet(false)}
     >
       <div 
-        className="bg-white w-full rounded-t-xl animate-slide-up safe-area-bottom"
+        className="bg-white w-full rounded-t-xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-6">
@@ -163,7 +182,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
                 captureScreenshot();
               }}
               disabled={isCapturing}
-              className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors mobile-share-button"
+              className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
@@ -186,7 +205,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
                 setShowActionSheet(false);
                 shareUrl();
               }}
-              className="w-full flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors mobile-share-button"
+              className="w-full flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
@@ -214,11 +233,11 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
 
   return (
     <>
-      {/* Mobile-first design - matching brutalist UI style */}
+      {/* Mobile-first design */}
       <div className="block sm:hidden">
         <button
           onClick={() => setShowActionSheet(true)}
-          className="w-full flex items-center justify-center gap-2 h-12 px-4 rounded-none border-2 border-black bg-blue-500 text-white font-bold text-sm leading-normal hover:bg-blue-600 transition-all duration-200 shadow-[4px_4px_0px_#000000] hover:scale-105"
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl transition-all duration-150 shadow-sm"
           style={{
             transform: showActionSheet ? 'scale(0.98)' : 'scale(1)',
           }}
@@ -264,4 +283,4 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
   );
 };
 
-export default ScreenshotShare;
+export default MobileScreenshotShare;

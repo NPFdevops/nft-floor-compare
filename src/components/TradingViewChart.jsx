@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, AreaSeries } from 'lightweight-charts';
+import './TradingViewChart.css';
 
 const TradingViewChart = ({ 
   collections = [], 
@@ -70,11 +71,33 @@ const TradingViewChart = ({
             top: 0.1,
             bottom: 0.1,
           },
+          // Format price scale to show ETH suffix
+          priceFormat: {
+            type: 'price',
+            precision: 2,
+            minMove: 0.01,
+          },
         },
         timeScale: {
           borderVisible: false,
           timeVisible: true,
           secondsVisible: false,
+          // Disable interaction to keep chart static
+          rightBarStaysOnScroll: true,
+          lockVisibleTimeRangeOnResize: true,
+        },
+        // Disable interactions to make chart static
+        handleScroll: {
+          mouseWheel: false,
+          pressedMouseMove: false,
+          horzTouchDrag: false,
+          vertTouchDrag: false,
+        },
+        handleScale: {
+          mouseWheel: false,
+          pinch: false,
+          axisPressedMouseMove: false,
+          axisDoubleClickReset: false,
         },
         watermark: {
           visible: true,
@@ -120,6 +143,16 @@ const TradingViewChart = ({
         if (chartData.length > 0) {
           areaSeries.setData(chartData);
           seriesRefs.current[index] = areaSeries;
+          
+          // Add custom tooltip formatting
+          areaSeries.applyOptions({
+            priceFormat: {
+              type: 'custom',
+              formatter: (price) => {
+                return `${parseFloat(price).toFixed(2)} ETH`;
+              },
+            },
+          });
         }
         } catch (error) {
           console.error('Error creating line series:', error);
@@ -183,8 +216,9 @@ const TradingViewChart = ({
     );
   }
 
+
   return (
-    <div className="trading-view-chart-container" style={{ width: '100%', height: '100%' }}>
+    <div className="trading-view-chart-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div 
         ref={chartContainerRef} 
         className="chart-container"
