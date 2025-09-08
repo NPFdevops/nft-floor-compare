@@ -101,6 +101,44 @@ class DatabaseService {
   }
 
   /**
+   * Get current top 250 collections (by market cap)
+   */
+  getCurrentTop250Collections() {
+    const stmt = this.db.prepare(`
+      SELECT * FROM collections 
+      WHERE is_top_250 = 1 
+      ORDER BY market_cap_rank ASC
+    `);
+    return stmt.all();
+  }
+
+  /**
+   * Update collection with market cap data
+   */
+  upsertCollectionWithMarketCap(collectionData) {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO collections (
+        slug, name, ranking, image, total_supply, owners, market_cap, 
+        market_cap_rank, is_top_250, selection_period, selected_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    return stmt.run(
+      collectionData.slug,
+      collectionData.name,
+      collectionData.ranking,
+      collectionData.image,
+      collectionData.totalSupply,
+      collectionData.owners,
+      collectionData.marketCap,
+      collectionData.marketCapRank,
+      collectionData.isTop250 ? 1 : 0,
+      collectionData.selectionPeriod,
+      collectionData.selectedAt
+    );
+  }
+
+  /**
    * Get collection by slug
    */
   getCollection(slug) {

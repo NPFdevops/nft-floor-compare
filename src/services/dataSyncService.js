@@ -6,21 +6,23 @@
 import { getDatabase } from './databaseService.js';
 import { rateLimitManager } from './rateLimitManager.js';
 import { fetchFloorPriceHistory, fetchTopCollections } from './nftAPI.js';
+import { getMarketCapSelectionService } from './marketCapSelectionService.js';
 import axios from 'axios';
 
 class DataSyncService {
   constructor() {
     this.db = getDatabase();
+    this.marketCapService = getMarketCapSelectionService();
     this.config = {
-      maxCollections: 250,        // Top 250 collections (per your methodology)
+      maxCollections: 250,        // Top 250 collections by market cap
       batchSize: 10,              // Process in batches to respect rate limits
       delayBetweenBatches: 2000,  // 2 second delay between batches
       maxRetries: 3,              // Max retries per collection
       timeoutPerCollection: 60000, // 60s timeout per collection
-      dataRetentionDays: 365,     // Keep 1 year of data (per your methodology)
+      dataRetentionDays: 365,     // Keep 1 year of data (rolling window)
     };
 
-    console.log('📊 Data Sync Service initialized');
+    console.log('📊 Data Sync Service initialized (Market Cap Methodology)');
   }
 
   /**
@@ -33,11 +35,23 @@ class DataSyncService {
     try {
       console.log('🚀 Starting daily sync...');
       
-      // Step 1: Update collections list
+      // Step 1: Check if quarterly selection update is needed
+      const selectionCheck = this.marketCapService.needsNewSelection();
+      if (selectionCheck.needed) {
+        console.log(`📅 Quarterly selection update needed: ${selectionCheck.reason}`);
+        const selectionResult = await this.marketCapService.performQuarterlySelection();
+        if (selectionResult.success) {
+          console.log(`✅ Quarterly selection completed for period ${selectionResult.period}`);
+        } else {
+          console.warn(`⚠️  Quarterly selection failed: ${selectionResult.error}`);
+        }
+      }
+      
+      // Step 2: Update collections list (metadata refresh)
       const collectionsResult = await this.syncCollectionsList();
       
-      // Step 2: Get active collections to sync
-      const activeCollections = this.db.getAllCollections().slice(0, this.config.maxCollections);
+      // Step 3: Get TOP 250 collections by market cap to sync
+      const activeCollections = this.db.getCurrentTop250Collections();
       console.log(`📋 Found ${activeCollections.length} collections to sync`);
       
       // Step 3: Sync price history for all collections

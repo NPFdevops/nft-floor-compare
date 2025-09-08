@@ -7,6 +7,7 @@
 
 import { getDataSyncService } from '../services/dataSyncService.js';
 import { getDailySyncScheduler } from '../scheduler/dailySync.js';
+import { getMarketCapSelectionService } from '../services/marketCapSelectionService.js';
 
 async function runManualSync() {
   console.log('🔧 Starting manual sync...\n');
@@ -16,6 +17,7 @@ async function runManualSync() {
 
   try {
     const syncService = getDataSyncService();
+    const marketCapService = getMarketCapSelectionService();
 
     switch (command) {
       case 'daily':
@@ -82,6 +84,46 @@ async function runManualSync() {
         }
         break;
 
+      case 'selection':
+        const selectionAction = args[1]; // 'check', 'update', 'status', 'history'
+        
+        switch (selectionAction) {
+          case 'check':
+            console.log('🔍 Checking if quarterly selection update is needed...');
+            const needsUpdate = marketCapService.needsNewSelection();
+            console.log('Result:', needsUpdate);
+            break;
+          case 'update':
+            console.log('🎯 Running quarterly market cap selection...');
+            const updateResult = await marketCapService.performQuarterlySelection();
+            console.log('Result:', updateResult);
+            break;
+          case 'status':
+            console.log('📊 Getting active selection status...');
+            const selectionInfo = marketCapService.getActiveSelectionInfo();
+            console.log('Active Selection:', JSON.stringify(selectionInfo, null, 2));
+            break;
+          case 'history':
+            console.log('📚 Getting selection history...');
+            const history = marketCapService.getSelectionHistory();
+            console.log('Selection History:', JSON.stringify(history, null, 2));
+            break;
+          case 'collections':
+            console.log('🏆 Getting current top 250 collections...');
+            const top250 = marketCapService.getCurrentTop250Collections();
+            console.log(`Current Top 250: ${top250.length} collections`);
+            top250.slice(0, 10).forEach((col, i) => {
+              console.log(`  ${i + 1}. ${col.name}: $${(col.market_cap || 0).toLocaleString()} (Rank ${col.market_cap_rank})`);
+            });
+            if (top250.length > 10) {
+              console.log(`  ... and ${top250.length - 10} more collections`);
+            }
+            break;
+          default:
+            console.log('Available selection actions: check, update, status, history, collections');
+        }
+        break;
+
       default:
         console.log('🔧 Manual Sync Commands:\n');
         console.log('Available commands:');
@@ -89,10 +131,19 @@ async function runManualSync() {
         console.log('  collections              - Sync collections list only');
         console.log('  collection <slug> [days] - Sync specific collection');
         console.log('  status                   - Show sync status');
+        console.log('  selection <action>       - Manage quarterly market cap selections');
         console.log('  scheduler <action>       - Control scheduler (start/stop/status/run/cleanup)');
+        console.log('\nSelection actions:');
+        console.log('  check                    - Check if quarterly update needed');
+        console.log('  update                   - Run quarterly selection update');
+        console.log('  status                   - Show active selection period');
+        console.log('  history                  - Show selection history');
+        console.log('  collections              - List current top 250 collections');
         console.log('\nExamples:');
         console.log('  npm run sync:manual daily');
         console.log('  npm run sync:manual collection cryptopunks 30');
+        console.log('  npm run sync:manual selection check');
+        console.log('  npm run sync:manual selection update');
         console.log('  npm run sync:manual scheduler status');
         break;
     }

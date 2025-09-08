@@ -6,11 +6,13 @@
 import cron from 'node-cron';
 import { getDataSyncService } from '../services/dataSyncService.js';
 import { getDatabase } from '../services/databaseService.js';
+import { getMarketCapSelectionService } from '../services/marketCapSelectionService.js';
 
 class DailySyncScheduler {
   constructor() {
     this.syncService = getDataSyncService();
     this.db = getDatabase();
+    this.marketCapService = getMarketCapSelectionService();
     this.config = {
       // Run at 2:00 AM daily (when traffic is typically lowest)
       dailySyncTime: '0 2 * * *',

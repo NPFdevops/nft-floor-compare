@@ -8,14 +8,16 @@
 
 import { getDatabase } from '../services/databaseService.js';
 import { getDataSyncService } from '../services/dataSyncService.js';
+import { getMarketCapSelectionService } from '../services/marketCapSelectionService.js';
 import { rateLimitManager } from '../services/rateLimitManager.js';
 
 class FullYearSync {
   constructor() {
     this.db = getDatabase();
     this.syncService = getDataSyncService();
+    this.marketCapService = getMarketCapSelectionService();
     this.config = {
-      targetCollections: 250,    // Top 250 collections
+      targetCollections: 250,    // Top 250 collections by market cap
       daysToSync: 365,          // 1 full year
       batchSize: 5,             // Smaller batches for large historical syncs
       delayBetweenCollections: 3000, // 3 seconds between collections
@@ -40,20 +42,20 @@ class FullYearSync {
     let logId;
 
     try {
-      // Step 1: Initialize collections list
-      console.log('📋 Step 1: Syncing collections list...');
+      // Step 1: Perform quarterly market cap selection
+      console.log('🎯 Step 1: Performing market cap selection for top 250 collections...');
       logId = this.db.startSyncLog('full_year', null);
       
-      const collectionsResult = await this.syncService.syncCollectionsList();
-      if (!collectionsResult.success) {
-        throw new Error('Failed to sync collections list');
+      const selectionResult = await this.marketCapService.performQuarterlySelection();
+      if (!selectionResult.success) {
+        throw new Error(`Market cap selection failed: ${selectionResult.error}`);
       }
 
-      console.log(`✅ Synced ${collectionsResult.inserted} collections\n`);
+      console.log(`✅ Selected ${selectionResult.selected} collections by market cap`);
+      console.log(`💰 Market cap range: $${selectionResult.marketCapRange.min_market_cap.toLocaleString()} - $${selectionResult.marketCapRange.max_market_cap.toLocaleString()}\n`);
 
-      // Step 2: Get target collections (top 250)
-      const targetCollections = this.db.getAllCollections()
-        .slice(0, this.config.targetCollections);
+      // Step 2: Get selected top 250 collections
+      const targetCollections = this.db.getCurrentTop250Collections();
 
       console.log(`🎯 Step 2: Selected top ${targetCollections.length} collections for 1-year sync\n`);
 
