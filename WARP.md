@@ -105,3 +105,59 @@ The application implements URL-based state sharing for enhanced user experience:
 - **URL Synchronization**: App state changes are reflected in the URL in real-time for browser history support
 - **Deep Linking**: Direct links to specific comparisons work on page load
 - **Share Functionality**: Multiple sharing options including URL copying, native share API, and screenshot sharing
+
+🎯 Consistent Brutalist Design System
+All components now follow the same design pattern:
+•  Black borders (border-2 border-black)
+•  Sharp corners (rounded-none)
+•  Drop shadows (shadow-[4px_4px_0px_#000000])
+•  Accent color backgrounds for selected states (bg-[var(--accent-color)])
+•  Hover animations (hover:scale-105)
+
+📱 Mobile-First Improvements
+
+TimeframeSelector
+•  Responsive Design: Mobile gets larger touch targets (h-12) and full-width grid
+•  Brutalist Style: Now matches the app's black borders and shadow system
+•  Haptic Feedback: Subtle vibrations on mobile interactions
+•  Better Typography: Consistent font weights and sizing
+
+LayoutToggle 
+•  Enhanced Mobile: Larger buttons with icons (view_column/view_agenda)
+•  Visual Hierarchy: Clear labels and better spacing
+•  Icon Integration: Material symbols for better usability
+•  Touch Targets: 44px minimum touch targets following Apple HIG
+
+ScreenshotShare
+•  Action Sheet Pattern: Native iOS-style bottom sheet for mobile
+•  Native Sharing: Uses Web Share API when available
+•  Toast Notifications: Non-intrusive feedback instead of alerts  
+•  Device Pixel Ratio: High-quality screenshots on retina displays
+•  Haptic Feedback: Success/error vibrations
+
+ApplyButton
+•  Consistent Height: Now h-10 to match other buttons
+•  Shadow System: Proper drop shadows including disabled state
+•  Mobile Feedback: Haptic response for successful interactions
+
+🍎 Apple Human Interface Guidelines Compliance
+
+•  44px minimum touch targets for all interactive elements
+•  Haptic feedback for user interactions
+•  Native sharing patterns with Web Share API
+•  Smooth animations with easing functions
+•  Action sheets for mobile-appropriate interactions
+•  Toast notifications instead of disruptive alerts
+•  Safe area support for notched devices
+•  Dark mode considerations in CSS
+•  Reduced motion support for accessibility
+
+🎨 Visual Enhancements
+
+•  Unified Design Language: All components now share the same visual DNA
+•  Better Mobile Spacing: Optimized for thumb navigation
+•  Enhanced Icons: Material symbols for better recognition
+•  Consistent Animations: Unified hover and press states
+•  Improved Typography: Better contrast and readability
+
+The mobile experience now feels native and professional while maintaining the distinctive brutalist aesthetic of your desktop interface! 📱✨
