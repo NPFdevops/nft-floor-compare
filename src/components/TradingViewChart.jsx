@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, AreaSeries } from 'lightweight-charts';
 import './TradingViewChart.css';
+import logoImage from '../assets/NFTPriceFloor_logo.png';
 
 const TradingViewChart = ({ 
   collections = [], 
@@ -100,12 +101,7 @@ const TradingViewChart = ({
           axisDoubleClickReset: false,
         },
         watermark: {
-          visible: true,
-          fontSize: 24,
-          horzAlign: 'center',
-          vertAlign: 'center',
-          color: 'rgba(204, 204, 204, 0.2)',
-          text: 'NFTPRICEFLOOR',
+          visible: false, // Disable text watermark since we'll use image overlay
         },
       });
 
@@ -228,6 +224,30 @@ const TradingViewChart = ({
           minHeight: `${height}px`
         }}
       />
+      {/* Logo Watermark Overlay */}
+      <div 
+        className="chart-logo-watermark"
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          opacity: 0.5,
+          pointerEvents: 'none',
+          zIndex: 1,
+          userSelect: 'none'
+        }}
+      >
+        <img 
+          src={logoImage} 
+          alt="NFT Price Floor" 
+          style={{
+            height: '60px',
+            width: 'auto',
+            opacity: 0.5
+          }}
+        />
+      </div>
     </div>
   );
 };

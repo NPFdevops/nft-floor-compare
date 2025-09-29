@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const ApiHealthCheck = ({ onClose }) => {
   const [status, setStatus] = useState('checking');
@@ -23,30 +24,31 @@ const ApiHealthCheck = ({ onClose }) => {
       hasHost: !!import.meta.env.VITE_RAPIDAPI_HOST
     };
 
-    // Test API connection
+    // Test API connection using axios (same as main API service)
     if (results.envVars.hasKey && results.envVars.hasHost) {
       try {
-        const response = await fetch(`https://${import.meta.env.VITE_RAPIDAPI_HOST}/projects/azuki/history/pricefloor/1d?start=1640995200&end=1672444800`, {
-          method: 'GET',
+        const response = await axios.get(`https://${import.meta.env.VITE_RAPIDAPI_HOST}/projects/azuki/history/pricefloor/1d?start=1640995200&end=1672444800`, {
           headers: {
             'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY,
-            'X-RapidAPI-Host': import.meta.env.VITE_RAPIDAPI_HOST
-          }
+            'X-RapidAPI-Host': import.meta.env.VITE_RAPIDAPI_HOST,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000 // 30 seconds - same as main API service
         });
 
         results.apiTest = {
-          success: response.ok,
+          success: response.status >= 200 && response.status < 300,
           status: response.status,
           statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
+          headers: response.headers
         };
 
-        if (response.ok) {
-          const data = await response.json();
+        if (results.apiTest.success) {
+          const data = response.data;
           results.apiTest.dataLength = Array.isArray(data) ? data.length : 'Not array';
           results.apiTest.sample = Array.isArray(data) && data.length > 0 ? data[0] : null;
         } else {
-          results.apiTest.errorData = await response.text();
+          results.apiTest.errorData = response.data;
         }
 
       } catch (error) {
@@ -54,7 +56,10 @@ const ApiHealthCheck = ({ onClose }) => {
           success: false,
           error: error.message,
           code: error.code,
-          type: error.constructor.name
+          type: error.constructor.name,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          errorData: error.response?.data
         };
       }
     } else {

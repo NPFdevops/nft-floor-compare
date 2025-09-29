@@ -8,9 +8,10 @@ import TimeframeSelector from './components/TimeframeSelector';
 import ApplyButton from './components/ApplyButton';
 import CacheStats from './components/CacheStats';
 import { fetchFloorPriceHistory } from './services/nftAPI';
-import { getDefaultDateRange, dateToTimestamp, getOptimalGranularity, isValidDateRange } from './utils/dateUtils';
+import { getDefaultDateRange, dateToTimestamp, getOptimalGranularity, isValidDateRange, validateTimestamps } from './utils/dateUtils';
 import { parseUrlParams, createUrlParams } from './utils/urlUtils';
 import { collectionsService } from './services/collectionsService';
+import { posthogService } from './services/posthogService';
 import logoImage from './assets/NFTPriceFloor_logo.png';
 import mobileLogoImage from './assets/nftpf_logo_mobile.png';
 
@@ -45,9 +46,17 @@ function App() {
 
   // Helper function to calculate date range based on timeframe
   const calculateDateRange = (timeframeValue) => {
-    const end = new Date();
+    const today = new Date();
+    const end = new Date(today);
     end.setHours(23, 59, 59, 999); // End of today
-    const start = new Date();
+    
+    // Ensure end date is never in the future
+    const now = new Date();
+    if (end > now) {
+      end.setTime(now.getTime());
+    }
+    
+    const start = new Date(end);
     
     switch (timeframeValue) {
       case '30d':
@@ -160,11 +169,22 @@ function App() {
     setError(prev => ({ ...prev, [errorKey]: null }));
 
     try {
-      const startTimestamp = dateToTimestamp(startDate);
-      const endTimestamp = dateToTimestamp(endDate);
+      const rawStartTimestamp = dateToTimestamp(startDate);
+      const rawEndTimestamp = dateToTimestamp(endDate);
+      
+      // Validate and clamp timestamps to reasonable bounds
+      const { startTimestamp, endTimestamp } = validateTimestamps(rawStartTimestamp, rawEndTimestamp);
+      
       const granularity = getOptimalGranularity(startDate, endDate);
       
-      console.log('🚀 Making API call with timeframe:', effectiveTimeframe);
+      console.log('🚀 Making API call with validated timestamps:', {
+        timeframe: effectiveTimeframe,
+        startTimestamp,
+        endTimestamp,
+        startDate: new Date(startTimestamp * 1000).toISOString().split('T')[0],
+        endDate: new Date(endTimestamp * 1000).toISOString().split('T')[0]
+      });
+      
       const result = await fetchFloorPriceHistory(collectionSlug, granularity, startTimestamp, endTimestamp, effectiveTimeframe);
       
       if (result.success) {
@@ -192,6 +212,14 @@ function App() {
 
   // Legacy function that uses current timeframe state
   const handleCollectionSearch = async (collectionSlug, collectionNumber) => {
+    // Track collection search analytics
+    posthogService.track('collection_searched', {
+      collection_slug: collectionSlug,
+      collection_number: collectionNumber,
+      timeframe: timeframe,
+      layout: layout
+    });
+    
     return handleCollectionSearchWithTimeframe(collectionSlug, collectionNumber, timeframe);
   };
 
@@ -257,6 +285,15 @@ function App() {
   const handleTimeframeChange = (newTimeframe) => {
     console.log('🕐 Timeframe selected:', newTimeframe);
     
+    // Track timeframe change analytics
+    posthogService.track('timeframe_changed', {
+      previous_timeframe: timeframe,
+      new_timeframe: newTimeframe,
+      has_collection1: !!collection1,
+      has_collection2: !!collection2,
+      layout: layout
+    });
+    
     // Calculate date range for the new timeframe
     const dateRange = calculateDateRange(newTimeframe);
     
@@ -279,6 +316,16 @@ function App() {
   // Handle layout changes with URL sync
   const handleLayoutChange = (newLayout) => {
     console.log('📏 Layout changed to:', newLayout);
+    
+    // Track layout change analytics
+    posthogService.track('layout_changed', {
+      previous_layout: layout,
+      new_layout: newLayout,
+      has_collection1: !!collection1,
+      has_collection2: !!collection2,
+      timeframe: timeframe
+    });
+    
     setLayout(newLayout);
     
     // Ensure we're marked as initialized for URL sync
@@ -290,6 +337,16 @@ function App() {
   // Handle applying the selected timeframe (trigger data fetching)
   const handleApply = () => {
     console.log('✅ Applying timeframe:', timeframe, 'with date range:', { startDate, endDate });
+    
+    // Track apply action analytics
+    posthogService.track('timeframe_applied', {
+      timeframe: timeframe,
+      start_date: startDate,
+      end_date: endDate,
+      has_collection1: !!collection1,
+      has_collection2: !!collection2,
+      layout: layout
+    });
     
     // Clear pending changes since we're applying them now
     setHasPendingChanges(false);
@@ -388,13 +445,6 @@ function App() {
                   timeframe={timeframe}
                   onTimeframeChange={handleTimeframeChange}
                 />
-                <ApplyButton
-                  onApply={handleApply}
-                  loading={loading.collection1 || loading.collection2}
-                  disabled={!collection1 && !collection2}
-                  timeframe={timeframe}
-                  hasPendingChanges={hasPendingChanges}
-                />
               </div>
               
               {/* Right side controls - Screenshot and Share */}
@@ -412,38 +462,80 @@ function App() {
             {/* Charts Section */}
             <div className="flex flex-1 min-h-[500px]" id="chart-container">
               {layout === 'horizontal' ? (
-                // Side by side layout - two separate charts
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full h-full">
-                  <ChartDisplay 
-                    collection={collection1}
-                    title="Collection A"
-                    loading={loading.collection1}
-                    error={error.collection1}
-                    timeframe={timeframe}
-                    onRangeChange={handleRangeChange}
-                  />
-                  <ChartDisplay 
-                    collection={collection2}
-                    title="Collection B"
-                    loading={loading.collection2}
-                    error={error.collection2}
-                    timeframe={timeframe}
-                    onRangeChange={handleRangeChange}
-                  />
+                // Side by side layout - two separate charts with Apply button in the middle
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full h-full relative">
+                  <div className={`transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
+                    <ChartDisplay 
+                      collection={collection1}
+                      title="Collection A"
+                      loading={loading.collection1}
+                      error={error.collection1}
+                      timeframe={timeframe}
+                      onRangeChange={handleRangeChange}
+                    />
+                  </div>
+                  {/* Apply Button positioned in the middle of the two charts - only show when there are pending changes */}
+                  {hasPendingChanges && (
+                    <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
+                      <ApplyButton
+                        onApply={handleApply}
+                        loading={loading.collection1 || loading.collection2}
+                        disabled={!collection1 && !collection2}
+                        timeframe={timeframe}
+                        hasPendingChanges={hasPendingChanges}
+                      />
+                    </div>
+                  )}
+                  <div className={`transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
+                    <ChartDisplay 
+                      collection={collection2}
+                      title="Collection B"
+                      loading={loading.collection2}
+                      error={error.collection2}
+                      timeframe={timeframe}
+                      onRangeChange={handleRangeChange}
+                    />
+                  </div>
+                  {/* Apply Button for mobile - positioned below charts - only show when there are pending changes */}
+                  {hasPendingChanges && (
+                    <div className="md:hidden col-span-full flex justify-center mt-4">
+                      <ApplyButton
+                        onApply={handleApply}
+                        loading={loading.collection1 || loading.collection2}
+                        disabled={!collection1 && !collection2}
+                        timeframe={timeframe}
+                        hasPendingChanges={hasPendingChanges}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
-                // Stacked layout - one combined chart with both collections
-                <div className="w-full h-full">
-                  <ChartDisplay 
-                    collection={collection1}
-                    collection2={collection2}
-                    title="Floor Price Comparison"
-                    loading={loading.collection1 || loading.collection2}
-                    error={error.collection1 || error.collection2}
-                    timeframe={timeframe}
-                    onRangeChange={handleRangeChange}
-                    isComparison={true}
-                  />
+                // Stacked layout - one combined chart with Apply button centered below
+                <div className="w-full h-full flex flex-col">
+                  <div className={`flex-1 transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
+                    <ChartDisplay 
+                      collection={collection1}
+                      collection2={collection2}
+                      title="Floor Price Comparison"
+                      loading={loading.collection1 || loading.collection2}
+                      error={error.collection1 || error.collection2}
+                      timeframe={timeframe}
+                      onRangeChange={handleRangeChange}
+                      isComparison={true}
+                    />
+                  </div>
+                  {/* Apply Button centered below the stacked chart - only show when there are pending changes */}
+                  {hasPendingChanges && (
+                    <div className="flex justify-center mt-4">
+                      <ApplyButton
+                        onApply={handleApply}
+                        loading={loading.collection1 || loading.collection2}
+                        disabled={!collection1 && !collection2}
+                        timeframe={timeframe}
+                        hasPendingChanges={hasPendingChanges}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -571,7 +663,7 @@ function App() {
       </footer>
       
       {/* Cache Statistics - Development Only */}
-      <CacheStats />
+      {/* <CacheStats /> */}
     </div>
   );
 }

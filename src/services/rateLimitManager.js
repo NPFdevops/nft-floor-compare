@@ -5,14 +5,23 @@
 
 class RateLimitManager {
   constructor() {
-    // Rate limiting configuration based on your rule (16 minutes = 960 seconds)
+    // Rate limiting configuration based on actual API limits from response headers
     this.config = {
-      maxRequestsPerWindow: 5,        // Max requests per window
-      windowSizeMs: 16 * 60 * 1000,   // 16 minutes window (per your rule)
-      retryDelays: [1000, 2000, 5000, 10000, 30000], // Progressive backoff (1s, 2s, 5s, 10s, 30s)
-      maxRetries: 4,
-      timeoutMs: 45000,               // Increased from 30s to 45s
-      queueSize: 20,                  // Max queued requests
+      // Conservative limits based on API response analysis
+      maxRequestsPerWindow: 100,      // Conservative limit for live/historical data
+      windowSizeMs: 60 * 1000,        // 1 minute window (much more reasonable)
+      retryDelays: [500, 1000, 2000, 5000], // Reduced delays based on fast API response (110ms)
+      maxRetries: 3,                  // Reduced from 4 to 3 retries
+      timeoutMs: 100000,               // 100 second timeout - balanced for reliability
+      queueSize: 50,                  // Increased queue size for better throughput
+    };
+
+    // Track different rate limit types from API headers
+    this.rateLimits = {
+      requests: { limit: 500000, remaining: 500000, reset: null },
+      liveData: { limit: 10000, remaining: 10000, reset: null },
+      historicalData: { limit: 10000, remaining: 10000, reset: null },
+      sales: { limit: 5000, remaining: 5000, reset: null }
     };
 
     // Request tracking
@@ -42,7 +51,14 @@ class RateLimitManager {
       time => Date.now() - time < this.config.windowSizeMs
     );
 
-    return recentRequests.length < this.config.maxRequestsPerWindow;
+    // Check local rate limiting
+    const localLimitOk = recentRequests.length < this.config.maxRequestsPerWindow;
+    
+    // Check API rate limits (use most restrictive)
+    const apiLimitOk = this.rateLimits.liveData.remaining > 0 && 
+                       this.rateLimits.historicalData.remaining > 0;
+    
+    return localLimitOk && apiLimitOk;
   }
 
   /**
@@ -79,23 +95,46 @@ class RateLimitManager {
    * Update rate limit info from API response headers
    */
   updateFromHeaders(headers) {
-    const remaining = parseInt(headers['x-ratelimit-remaining']);
-    const reset = parseInt(headers['x-ratelimit-reset']);
-    const limit = parseInt(headers['x-ratelimit-limit']);
+    // Parse all rate limit types from API response
+    const rateLimitMappings = [
+      { key: 'requests', limit: 'x-ratelimit-requests-limit', remaining: 'x-ratelimit-requests-remaining', reset: 'x-ratelimit-requests-reset' },
+      { key: 'liveData', limit: 'x-ratelimit-live-data-limit', remaining: 'x-ratelimit-live-data-remaining', reset: 'x-ratelimit-live-data-reset' },
+      { key: 'historicalData', limit: 'x-ratelimit-historical-data-limit', remaining: 'x-ratelimit-historical-data-remaining', reset: 'x-ratelimit-historical-data-reset' },
+      { key: 'sales', limit: 'x-ratelimit-sales-limit', remaining: 'x-ratelimit-sales-remaining', reset: 'x-ratelimit-sales-reset' }
+    ];
 
-    if (!isNaN(remaining)) {
-      this.remainingRequests = remaining;
-    }
+    let updated = false;
+    rateLimitMappings.forEach(mapping => {
+      const limit = parseInt(headers[mapping.limit]);
+      const remaining = parseInt(headers[mapping.remaining]);
+      const reset = parseInt(headers[mapping.reset]);
 
-    if (!isNaN(reset)) {
-      this.rateLimitReset = reset * 1000; // Convert to milliseconds
-    }
-
-    console.log('📊 Rate limit updated:', {
-      remaining: this.remainingRequests,
-      limit,
-      resetTime: this.rateLimitReset ? new Date(this.rateLimitReset) : 'unknown'
+      if (!isNaN(limit)) {
+        this.rateLimits[mapping.key].limit = limit;
+        updated = true;
+      }
+      if (!isNaN(remaining)) {
+        this.rateLimits[mapping.key].remaining = remaining;
+        updated = true;
+      }
+      if (!isNaN(reset)) {
+        this.rateLimits[mapping.key].reset = reset * 1000; // Convert to milliseconds
+        updated = true;
+      }
     });
+
+    // Update legacy properties for backward compatibility
+    this.remainingRequests = this.rateLimits.liveData.remaining;
+    this.rateLimitReset = this.rateLimits.liveData.reset;
+
+    if (updated) {
+      console.log('📊 Rate limits updated:', {
+        requests: `${this.rateLimits.requests.remaining}/${this.rateLimits.requests.limit}`,
+        liveData: `${this.rateLimits.liveData.remaining}/${this.rateLimits.liveData.limit}`,
+        historicalData: `${this.rateLimits.historicalData.remaining}/${this.rateLimits.historicalData.limit}`,
+        sales: `${this.rateLimits.sales.remaining}/${this.rateLimits.sales.limit}`
+      });
+    }
   }
 
   /**

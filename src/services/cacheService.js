@@ -15,6 +15,7 @@ class CacheService {
         '90d': 30 * 60 * 1000,      // 30 minutes for 90-day data  
         '1Y': 60 * 60 * 1000,       // 1 hour for 1-year data
         'YTD': 60 * 60 * 1000,      // 1 hour for YTD data
+        '30m': 30 * 60 * 1000,      // 30 minutes for ETag caching
         'default': 30 * 60 * 1000   // 30 minutes default
       },
       maxMemorySize: 150,

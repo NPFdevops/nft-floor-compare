@@ -41,7 +41,7 @@ const apiClient = axios.create({
     'X-RapidAPI-Host': RAPIDAPI_HOST,
     'Content-Type': 'application/json',
   },
-  timeout: 30000 // 30 second timeout
+  timeout: 30000 // 30 seconds - balanced between responsiveness and reliability
 });
 
 /**
@@ -123,14 +123,27 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
       endDate: new Date(endTime * 1000)
     });
     
+    // Check for cached ETag
+    const etagCacheKey = `etag_${cacheKey}`;
+    const cachedETag = await cacheService.get(etagCacheKey);
+    
+    const requestConfig = {
+      params: {
+        start: startTime,
+        end: endTime
+      }
+    };
+    
+    // Add If-None-Match header if we have a cached ETag
+    if (cachedETag) {
+      requestConfig.headers = {
+        'If-None-Match': cachedETag
+      };
+    }
+    
     const response = await apiClient.get(
       `/projects/${collectionSlug}/history/pricefloor/${granularity}`,
-      {
-        params: {
-          start: startTime,
-          end: endTime
-        }
-      }
+      requestConfig
     );
     
     console.log('API response status:', response.status);
@@ -172,8 +185,25 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
     // Cache the result with timeframe-aware TTL
     await cacheService.set(cacheKey, result, timeframe);
     
+    // Cache ETag for future conditional requests
+    const etag = response.headers.etag;
+    if (etag) {
+      const etagCacheKey = `etag_${cacheKey}`;
+      // Cache ETag for 30 minutes (same as API cache-control max-age=1800)
+      await cacheService.set(etagCacheKey, etag, '30m');
+    }
+    
     return result;
   } catch (error) {
+    // Handle 304 Not Modified - return cached data
+    if (error.response?.status === 304) {
+      console.log(`✅ Using cached data for ${collectionSlug} (304 Not Modified)`);
+      const cachedData = await cacheService.get(cacheKey, timeframe);
+      if (cachedData) {
+        return cachedData;
+      }
+    }
+    
     console.error(`❌ Error fetching floor price for ${collectionSlug}:`, error);
     
     // Enhanced error handling

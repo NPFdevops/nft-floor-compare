@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import html2canvas from 'html2canvas';
 import { createShareableUrl, generateShareTitle } from '../utils/urlUtils';
+import { posthogService } from '../services/posthogService';
 import './TradingViewChart.css';
 
 const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout }) => {
@@ -11,6 +12,16 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     const targetElement = document.getElementById(targetId);
     
     if (!targetElement) {
+      // Track failed screenshot attempt
+      posthogService.track('screenshot_failed', {
+        reason: 'no_target_element',
+        target_id: targetId,
+        has_collection1: !!collection1,
+        has_collection2: !!collection2,
+        timeframe: timeframe,
+        layout: layout
+      });
+      
       // Add haptic feedback for error
       if (window.navigator && window.navigator.vibrate) {
         window.navigator.vibrate([100, 100, 100]);
@@ -18,6 +29,16 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
       alert('No charts to capture. Please load some collection data first.');
       return;
     }
+
+    // Track screenshot attempt
+    posthogService.track('screenshot_started', {
+      target_id: targetId,
+      collection1_slug: collection1?.slug,
+      collection2_slug: collection2?.slug,
+      timeframe: timeframe,
+      layout: layout,
+      has_both_collections: !!(collection1 && collection2)
+    });
 
     setIsCapturing(true);
     
@@ -51,6 +72,16 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
         link.click();
         document.body.removeChild(link);
         
+        // Track successful screenshot
+        posthogService.track('screenshot_completed', {
+          filename: filename,
+          collection1_slug: collection1?.slug,
+          collection2_slug: collection2?.slug,
+          timeframe: timeframe,
+          layout: layout,
+          has_both_collections: !!(collection1 && collection2)
+        });
+        
         // Clean up the URL after a delay
         setTimeout(() => {
           URL.revokeObjectURL(url);
@@ -70,6 +101,16 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     const shareTitle = generateShareTitle({ collection1, collection2, timeframe });
     const shareUrl = createShareableUrl({ collection1, collection2, timeframe, layout });
     const shareText = `${shareTitle} - View interactive comparison`;
+    
+    // Track URL sharing attempt
+    posthogService.track('url_share_started', {
+      collection1_slug: collection1?.slug,
+      collection2_slug: collection2?.slug,
+      timeframe: timeframe,
+      layout: layout,
+      has_both_collections: !!(collection1 && collection2),
+      share_method: navigator.share ? 'native_share' : 'clipboard'
+    });
     
     // Add haptic feedback
     if (window.navigator && window.navigator.vibrate) {

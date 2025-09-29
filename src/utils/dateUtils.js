@@ -26,6 +26,12 @@ export const timestampToDate = (timestamp) => {
  */
 export const getDefaultDateRange = () => {
   const end = new Date();
+  // Ensure end date is not in the future
+  const today = new Date();
+  if (end > today) {
+    end.setTime(today.getTime());
+  }
+  
   const start = new Date();
   start.setDate(end.getDate() - 30);
   
@@ -61,7 +67,7 @@ export const getOptimalGranularity = (startDate, endDate) => {
 };
 
 /**
- * Validate that end date is after start date
+ * Validate that end date is after start date and not in the future
  * @param {string} startDate - Start date in YYYY-MM-DD format
  * @param {string} endDate - End date in YYYY-MM-DD format
  * @returns {boolean} True if valid, false otherwise
@@ -71,6 +77,34 @@ export const isValidDateRange = (startDate, endDate) => {
   
   const start = new Date(startDate);
   const end = new Date(endDate);
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // End of today
   
-  return start < end;
+  // Check that start < end and end is not in the future
+  return start < end && end <= today;
+};
+
+/**
+ * Validate and clamp timestamps to reasonable bounds
+ * @param {number} startTimestamp - Start timestamp in seconds
+ * @param {number} endTimestamp - End timestamp in seconds
+ * @returns {Object} Object with validated startTimestamp and endTimestamp
+ */
+export const validateTimestamps = (startTimestamp, endTimestamp) => {
+  const now = Math.floor(Date.now() / 1000);
+  const twoYearsAgo = now - (2 * 365 * 24 * 60 * 60); // 2 years ago
+  
+  // Clamp end timestamp to current time
+  const validEndTimestamp = Math.min(endTimestamp, now);
+  
+  // Ensure start timestamp is not too far in the past
+  const validStartTimestamp = Math.max(startTimestamp, twoYearsAgo);
+  
+  // Ensure start is before end
+  const finalStartTimestamp = Math.min(validStartTimestamp, validEndTimestamp - (24 * 60 * 60)); // At least 1 day difference
+  
+  return {
+    startTimestamp: finalStartTimestamp,
+    endTimestamp: validEndTimestamp
+  };
 };
