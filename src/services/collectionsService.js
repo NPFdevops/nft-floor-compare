@@ -152,8 +152,13 @@ class CollectionsService {
 export const collectionsService = new CollectionsService();
 
 // Auto-fetch collections on service initialization (with delay to not block startup)
-setTimeout(() => {
-  collectionsService.fetchCollections();
-}, 1000); // 1 second delay
+// Only fetch once, even if module is imported multiple times
+let hasInitialized = false;
+if (!hasInitialized) {
+  hasInitialized = true;
+  setTimeout(() => {
+    collectionsService.fetchCollections();
+  }, 1000); // 1 second delay
+}
 
 export default collectionsService;

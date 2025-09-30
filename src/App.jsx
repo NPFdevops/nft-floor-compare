@@ -18,8 +18,8 @@ import mobileLogoImage from './assets/nftpf_logo_mobile.png';
 function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Parse initial state from URL parameters
-  const initialUrlState = parseUrlParams(searchParams);
+  // Parse initial state from URL parameters - memoize to prevent re-creation
+  const initialUrlState = React.useMemo(() => parseUrlParams(searchParams), []);
   
   const [collection1, setCollection1] = useState(null);
   const [collection2, setCollection2] = useState(null);
@@ -29,11 +29,27 @@ function App() {
   const [loading, setLoading] = useState({ collection1: false, collection2: false });
   const [error, setError] = useState({ collection1: null, collection2: null });
   const [isInitialized, setIsInitialized] = useState(false); // Track if URL initialization is complete
+  const [isMobile, setIsMobile] = useState(false); // Track if viewport is mobile size
   
   // Date range state
   const defaultRange = getDefaultDateRange();
   const [startDate, setStartDate] = useState(defaultRange.startDate);
   const [endDate, setEndDate] = useState(defaultRange.endDate);
+
+  // Responsive layout effect - detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    // Check on mount
+    checkMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Debug: Track timeframe and pending changes state
   useEffect(() => {
@@ -127,7 +143,8 @@ function App() {
     };
     
     initializeFromUrl();
-  }, [isInitialized, initialUrlState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // URL synchronization effect - update URL when state changes
   useEffect(() => {
@@ -246,17 +263,11 @@ function App() {
       
       if (collection1) {
         console.log('🔄 Refetching collection1:', collection1.slug, 'with timeframe:', effectiveTimeframe);
-        // Use a setTimeout to ensure state has updated
-        setTimeout(() => {
-          handleCollectionSearchWithTimeframe(collection1.slug, 1, effectiveTimeframe);
-        }, 0);
+        handleCollectionSearchWithTimeframe(collection1.slug, 1, effectiveTimeframe);
       }
       if (collection2) {
         console.log('🔄 Refetching collection2:', collection2.slug, 'with timeframe:', effectiveTimeframe);
-        // Use a setTimeout to ensure state has updated
-        setTimeout(() => {
-          handleCollectionSearchWithTimeframe(collection2.slug, 2, effectiveTimeframe);
-        }, 0);
+        handleCollectionSearchWithTimeframe(collection2.slug, 2, effectiveTimeframe);
       }
     } else {
       console.log('⚠️ Invalid date range or missing dates:', {
@@ -391,11 +402,11 @@ function App() {
               <a href="https://nftpricefloor.com/nft-drops" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors">
                 Drops
               </a>
-              <a href="https://nftpricefloor.com/nft-news" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors">
-                Live News
-              </a>
-              <a href="https://nftpricefloor.com/wallet-tracker" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors">
-                Wallet Tracker
+              <span className="text-black font-semibold border-b-2 border-black pb-1">
+                Compare
+              </span>
+              <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors">
+                Strategies<sup className="text-xs">TM</sup>
               </a>
             </nav>
           </div>
@@ -461,7 +472,36 @@ function App() {
             
             {/* Charts Section */}
             <div className="flex flex-1 min-h-[500px]" id="chart-container">
-              {layout === 'horizontal' ? (
+              {/* Use stacked layout on mobile, split layout on desktop (unless user explicitly chose stacked) */}
+              {isMobile || layout === 'stacked' ? (
+                // Stacked layout - one combined chart with Apply button centered below
+                <div className="w-full h-full flex flex-col">
+                  <div className={`flex-1 transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
+                    <ChartDisplay 
+                      collection={collection1}
+                      collection2={collection2}
+                      title="Floor Price Comparison"
+                      loading={loading.collection1 || loading.collection2}
+                      error={error.collection1 || error.collection2}
+                      timeframe={timeframe}
+                      onRangeChange={handleRangeChange}
+                      isComparison={true}
+                    />
+                  </div>
+                  {/* Apply Button centered below the stacked chart - only show when there are pending changes */}
+                  {hasPendingChanges && (
+                    <div className="flex justify-center mt-4">
+                      <ApplyButton
+                        onApply={handleApply}
+                        loading={loading.collection1 || loading.collection2}
+                        disabled={!collection1 && !collection2}
+                        timeframe={timeframe}
+                        hasPendingChanges={hasPendingChanges}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
                 // Side by side layout - two separate charts with Apply button in the middle
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full h-full relative">
                   <div className={`transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
@@ -509,34 +549,6 @@ function App() {
                     </div>
                   )}
                 </div>
-              ) : (
-                // Stacked layout - one combined chart with Apply button centered below
-                <div className="w-full h-full flex flex-col">
-                  <div className={`flex-1 transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
-                    <ChartDisplay 
-                      collection={collection1}
-                      collection2={collection2}
-                      title="Floor Price Comparison"
-                      loading={loading.collection1 || loading.collection2}
-                      error={error.collection1 || error.collection2}
-                      timeframe={timeframe}
-                      onRangeChange={handleRangeChange}
-                      isComparison={true}
-                    />
-                  </div>
-                  {/* Apply Button centered below the stacked chart - only show when there are pending changes */}
-                  {hasPendingChanges && (
-                    <div className="flex justify-center mt-4">
-                      <ApplyButton
-                        onApply={handleApply}
-                        loading={loading.collection1 || loading.collection2}
-                        disabled={!collection1 && !collection2}
-                        timeframe={timeframe}
-                        hasPendingChanges={hasPendingChanges}
-                      />
-                    </div>
-                  )}
-                </div>
               )}
             </div>
           </div>
@@ -558,17 +570,17 @@ function App() {
             </svg>
             <span className="text-xs font-medium truncate">Drops</span>
           </a>
-          <a href="https://nftpricefloor.com/nft-news" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 text-gray-600 hover:text-black transition-colors min-w-0">
+          <div className="flex flex-col items-center gap-1 text-black min-w-0">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <span className="text-xs font-medium truncate">News</span>
-          </a>
-          <a href="https://nftpricefloor.com/wallet-tracker" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 text-gray-600 hover:text-black transition-colors min-w-0">
+            <span className="text-xs font-bold truncate border-b-2 border-black">Compare</span>
+          </div>
+          <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 text-gray-600 hover:text-black transition-colors min-w-0">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            <span className="text-xs font-medium truncate">Wallet</span>
+            <span className="text-xs font-medium truncate">Strategies<sup className="text-[8px]">TM</sup></span>
           </a>
         </div>
       </nav>

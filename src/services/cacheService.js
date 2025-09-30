@@ -8,19 +8,32 @@ class CacheService {
     // Memory cache for fastest access
     this.memoryCache = new Map();
     
+    // Request deduplication - track in-flight requests
+    this.pendingRequests = new Map();
+    
     // Cache configuration with different TTL for different timeframes
     this.config = {
       TTL: {
-        '30d': 15 * 60 * 1000,      // 15 minutes for 30-day data
-        '90d': 30 * 60 * 1000,      // 30 minutes for 90-day data  
-        '1Y': 60 * 60 * 1000,       // 1 hour for 1-year data
-        'YTD': 60 * 60 * 1000,      // 1 hour for YTD data
+        '30d': 30 * 60 * 1000,      // 30 minutes for 30-day data
+        '90d': 2 * 60 * 60 * 1000,  // 2 hours for 90-day data  
+        '1Y': 6 * 60 * 60 * 1000,   // 6 hours for 1-year data
+        'YTD': 6 * 60 * 60 * 1000,  // 6 hours for YTD data
         '30m': 30 * 60 * 1000,      // 30 minutes for ETag caching
+        '1h': 60 * 60 * 1000,       // 1 hour for collections list
         'default': 30 * 60 * 1000   // 30 minutes default
       },
-      maxMemorySize: 150,
-      maxLocalStorageSize: 500,
-      localStoragePrefix: 'nft_cache_v2_'
+      // Stale-while-revalidate: serve stale data while fetching fresh
+      staleWhileRevalidate: {
+        '30d': 60 * 60 * 1000,      // Serve stale for 1 hour
+        '90d': 4 * 60 * 60 * 1000,  // Serve stale for 4 hours
+        '1Y': 12 * 60 * 60 * 1000,  // Serve stale for 12 hours
+        'YTD': 12 * 60 * 60 * 1000,
+        'default': 2 * 60 * 60 * 1000
+      },
+      maxMemorySize: 200,
+      maxLocalStorageSize: 800,
+      localStoragePrefix: 'nft_cache_v3_',
+      compressionThreshold: 5000 // Compress data larger than 5KB
     };
     
     // Performance metrics
@@ -45,16 +58,23 @@ class CacheService {
   }
 
   /**
-   * Get data from multi-layer cache (memory first, then localStorage)
+   * Get data from multi-layer cache with stale-while-revalidate support
    */
-  async get(cacheKey, timeframe = 'default') {
+  async get(cacheKey, timeframe = 'default', allowStale = false) {
     // Check memory cache first
     const memoryItem = this.memoryCache.get(cacheKey);
-    if (memoryItem && this.isValid(memoryItem, timeframe)) {
-      memoryItem.lastAccessed = Date.now();
-      this.metrics.hits++;
-      console.log('🚀 Cache HIT (memory):', cacheKey);
-      return memoryItem.data;
+    if (memoryItem) {
+      if (this.isValid(memoryItem, timeframe)) {
+        memoryItem.lastAccessed = Date.now();
+        this.metrics.hits++;
+        console.log('🚀 Cache HIT (memory):', cacheKey);
+        return { data: memoryItem.data, isStale: false };
+      } else if (allowStale && this.isStale(memoryItem, timeframe)) {
+        memoryItem.lastAccessed = Date.now();
+        this.metrics.hits++;
+        console.log('⚡ Cache HIT (memory, stale):', cacheKey);
+        return { data: memoryItem.data, isStale: true };
+      }
     }
 
     // Check localStorage
@@ -63,7 +83,7 @@ class CacheService {
       const stored = localStorage.getItem(storageKey);
       
       if (stored) {
-        const item = JSON.parse(stored);
+        const item = this.decompressItem(JSON.parse(stored));
         if (this.isValid(item, timeframe)) {
           // Promote to memory cache
           item.lastAccessed = Date.now();
@@ -71,7 +91,13 @@ class CacheService {
           this.manageMemoryCache();
           this.metrics.hits++;
           console.log('🚀 Cache HIT (localStorage):', cacheKey);
-          return item.data;
+          return { data: item.data, isStale: false };
+        } else if (allowStale && this.isStale(item, timeframe)) {
+          item.lastAccessed = Date.now();
+          this.memoryCache.set(cacheKey, item);
+          this.metrics.hits++;
+          console.log('⚡ Cache HIT (localStorage, stale):', cacheKey);
+          return { data: item.data, isStale: true };
         } else {
           localStorage.removeItem(storageKey);
         }
@@ -86,33 +112,35 @@ class CacheService {
   }
 
   /**
-   * Store data in both memory and localStorage
+   * Store data in both memory and localStorage with compression
    */
   async set(cacheKey, data, timeframe = 'default') {
     const now = Date.now();
+    const dataStr = JSON.stringify(data);
     const item = {
       data,
       timestamp: now,
       lastAccessed: now,
       timeframe,
-      size: JSON.stringify(data).length
+      size: dataStr.length
     };
 
     // Store in memory cache
     this.memoryCache.set(cacheKey, item);
     this.manageMemoryCache();
 
-    // Store in localStorage
+    // Store in localStorage with compression for large data
     try {
       const storageKey = this.config.localStoragePrefix + cacheKey;
-      localStorage.setItem(storageKey, JSON.stringify(item));
+      const compressedItem = this.compressItem(item);
+      localStorage.setItem(storageKey, JSON.stringify(compressedItem));
       this.manageLocalStorageCache();
     } catch (error) {
       console.warn('localStorage cache write error:', error);
       this.cleanupLocalStorage();
     }
 
-    console.log('💾 Cache SET:', cacheKey, `(${timeframe})`);
+    console.log('💾 Cache SET:', cacheKey, `(${timeframe}, ${(item.size / 1024).toFixed(2)}KB)`);
   }
 
   /**
@@ -125,6 +153,81 @@ class CacheService {
     const age = Date.now() - item.timestamp;
     
     return age < ttl;
+  }
+
+  /**
+   * Check if cached item is stale but still usable (stale-while-revalidate)
+   */
+  isStale(item, timeframe) {
+    if (!item || !item.timestamp) return false;
+    
+    const staleTTL = this.config.staleWhileRevalidate[timeframe] || this.config.staleWhileRevalidate.default;
+    const age = Date.now() - item.timestamp;
+    
+    return age < staleTTL;
+  }
+
+  /**
+   * Compress item data for localStorage (simple base64 encoding for now)
+   */
+  compressItem(item) {
+    if (item.size < this.config.compressionThreshold) {
+      return item;
+    }
+    
+    try {
+      const dataStr = JSON.stringify(item.data);
+      const compressed = btoa(encodeURIComponent(dataStr));
+      return {
+        ...item,
+        data: compressed,
+        compressed: true
+      };
+    } catch (error) {
+      console.warn('Compression failed:', error);
+      return item;
+    }
+  }
+
+  /**
+   * Decompress item data from localStorage
+   */
+  decompressItem(item) {
+    if (!item.compressed) {
+      return item;
+    }
+    
+    try {
+      const decompressed = decodeURIComponent(atob(item.data));
+      return {
+        ...item,
+        data: JSON.parse(decompressed),
+        compressed: false
+      };
+    } catch (error) {
+      console.warn('Decompression failed:', error);
+      return item;
+    }
+  }
+
+  /**
+   * Deduplicate simultaneous requests to the same resource
+   */
+  async deduplicate(cacheKey, fetchFn) {
+    // Check if there's already a pending request for this key
+    if (this.pendingRequests.has(cacheKey)) {
+      console.log('🔄 Deduplicating request:', cacheKey);
+      return this.pendingRequests.get(cacheKey);
+    }
+
+    // Create new request and store promise
+    const promise = fetchFn().finally(() => {
+      // Clean up after request completes
+      this.pendingRequests.delete(cacheKey);
+    });
+
+    this.pendingRequests.set(cacheKey, promise);
+    return promise;
   }
 
   /**

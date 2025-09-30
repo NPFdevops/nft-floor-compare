@@ -41,7 +41,7 @@ const apiClient = axios.create({
     'X-RapidAPI-Host': RAPIDAPI_HOST,
     'Content-Type': 'application/json',
   },
-  timeout: 30000 // 30 seconds - balanced between responsiveness and reliability
+  timeout: 150000 // 150 seconds - extended timeout for production stability
 });
 
 /**
@@ -106,103 +106,32 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
     // Generate cache key with timeframe
     const cacheKey = cacheService.generateCacheKey(collectionSlug, granularity, startTime, endTime, timeframe);
     
-    // Try to get from cache first (multi-layer cache)
-    const cachedData = await cacheService.get(cacheKey, timeframe);
-    if (cachedData) {
-      console.log(`✅ Using cached data for ${collectionSlug} (${timeframe})`);
-      return cachedData;
+    // Try to get from cache first (multi-layer cache with stale support)
+    const cachedResult = await cacheService.get(cacheKey, timeframe, true);
+    if (cachedResult && !cachedResult.isStale) {
+      console.log(`✅ Using fresh cached data for ${collectionSlug} (${timeframe})`);
+      return cachedResult.data;
     }
     
-    console.log(`🔄 Fetching fresh data for ${collectionSlug} (${timeframe})`);
-    console.log('API request params:', {
-      collectionSlug,
-      granularity,
-      startTime,
-      endTime,
-      startDate: new Date(startTime * 1000),
-      endDate: new Date(endTime * 1000)
+    // If we have stale data, return it immediately and fetch fresh in background
+    if (cachedResult && cachedResult.isStale) {
+      console.log(`⚡ Using stale data for ${collectionSlug}, fetching fresh in background`);
+      // Return stale data immediately
+      const staleData = cachedResult.data;
+      
+      // Fetch fresh data in background (don't await)
+      fetchFreshData(collectionSlug, granularity, startTime, endTime, timeframe, cacheKey).catch(err => {
+        console.warn('Background refresh failed:', err);
+      });
+      
+      return staleData;
+    }
+    
+    // Use request deduplication to prevent duplicate simultaneous requests
+    return await cacheService.deduplicate(cacheKey, async () => {
+      return await fetchFreshData(collectionSlug, granularity, startTime, endTime, timeframe, cacheKey);
     });
-    
-    // Check for cached ETag
-    const etagCacheKey = `etag_${cacheKey}`;
-    const cachedETag = await cacheService.get(etagCacheKey);
-    
-    const requestConfig = {
-      params: {
-        start: startTime,
-        end: endTime
-      }
-    };
-    
-    // Add If-None-Match header if we have a cached ETag
-    if (cachedETag) {
-      requestConfig.headers = {
-        'If-None-Match': cachedETag
-      };
-    }
-    
-    const response = await apiClient.get(
-      `/projects/${collectionSlug}/history/pricefloor/${granularity}`,
-      requestConfig
-    );
-    
-    console.log('API response status:', response.status);
-    console.log('API response data type:', typeof response.data, Array.isArray(response.data));
-    console.log('API response data length:', response.data?.length);
-    
-    const data = response.data;
-    const formattedPriceHistory = formatPriceData(data);
-    
-    console.log('Formatted price history length:', formattedPriceHistory.length);
-    if (formattedPriceHistory.length > 0) {
-      console.log('First formatted data point:', formattedPriceHistory[0]);
-      console.log('Last formatted data point:', formattedPriceHistory[formattedPriceHistory.length - 1]);
-    }
-    
-    // Extract collection name from first data point
-    const collectionName = data.length > 0 ? (data[0].slug || data[0].collection || collectionSlug) : collectionSlug;
-    
-    const result = {
-      success: true,
-      data: data,
-      collectionName: collectionName,
-      priceHistory: formattedPriceHistory,
-      rawData: {
-        dataPoints: data,
-        timestamps: data.map(d => d.timestamp),
-        floorEth: data.map(d => d.lowestNative),
-        floorUsd: data.map(d => d.lowestUsd)
-      }
-    };
-    
-    console.log('Final result object:', {
-      success: result.success,
-      collectionName: result.collectionName,
-      priceHistoryLength: result.priceHistory.length,
-      hasData: result.data && result.data.length > 0
-    });
-    
-    // Cache the result with timeframe-aware TTL
-    await cacheService.set(cacheKey, result, timeframe);
-    
-    // Cache ETag for future conditional requests
-    const etag = response.headers.etag;
-    if (etag) {
-      const etagCacheKey = `etag_${cacheKey}`;
-      // Cache ETag for 30 minutes (same as API cache-control max-age=1800)
-      await cacheService.set(etagCacheKey, etag, '30m');
-    }
-    
-    return result;
   } catch (error) {
-    // Handle 304 Not Modified - return cached data
-    if (error.response?.status === 304) {
-      console.log(`✅ Using cached data for ${collectionSlug} (304 Not Modified)`);
-      const cachedData = await cacheService.get(cacheKey, timeframe);
-      if (cachedData) {
-        return cachedData;
-      }
-    }
     
     console.error(`❌ Error fetching floor price for ${collectionSlug}:`, error);
     
@@ -266,6 +195,91 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
   }
 };
 
+/**
+ * Internal function to fetch fresh data from API
+ * Separated for reuse in background refresh
+ */
+async function fetchFreshData(collectionSlug, granularity, startTime, endTime, timeframe, cacheKey) {
+  console.log(`🔄 Fetching fresh data for ${collectionSlug} (${timeframe})`);
+  console.log('API request params:', {
+    collectionSlug,
+    granularity,
+    startTime,
+    endTime,
+    startDate: new Date(startTime * 1000).toISOString().split('T')[0],
+    endDate: new Date(endTime * 1000).toISOString().split('T')[0]
+  });
+  
+  // Check for cached ETag
+  const etagCacheKey = `etag_${cacheKey}`;
+  const cachedETagResult = await cacheService.get(etagCacheKey, '30m');
+  const cachedETag = cachedETagResult?.data || null;
+  
+  const requestConfig = {
+    params: {
+      start: startTime,
+      end: endTime
+    }
+  };
+  
+  // Add If-None-Match header if we have a cached ETag
+  if (cachedETag) {
+    requestConfig.headers = {
+      'If-None-Match': cachedETag
+    };
+  }
+  
+  try {
+    const response = await apiClient.get(
+      `/projects/${collectionSlug}/history/pricefloor/${granularity}`,
+      requestConfig
+    );
+    
+    console.log('API response status:', response.status);
+    console.log('API response data length:', response.data?.length);
+    
+    const data = response.data;
+    const formattedPriceHistory = formatPriceData(data);
+    
+    // Extract collection name from first data point
+    const collectionName = data.length > 0 ? (data[0].slug || data[0].collection || collectionSlug) : collectionSlug;
+    
+    const result = {
+      success: true,
+      data: data,
+      collectionName: collectionName,
+      priceHistory: formattedPriceHistory,
+      rawData: {
+        dataPoints: data,
+        timestamps: data.map(d => d.timestamp),
+        floorEth: data.map(d => d.lowestNative),
+        floorUsd: data.map(d => d.lowestUsd)
+      }
+    };
+    
+    // Cache the result with timeframe-aware TTL
+    await cacheService.set(cacheKey, result, timeframe);
+    
+    // Cache ETag for future conditional requests
+    const etag = response.headers.etag;
+    if (etag) {
+      await cacheService.set(etagCacheKey, etag, '30m');
+    }
+    
+    return result;
+  } catch (error) {
+    // Handle 304 Not Modified - return cached data
+    if (error.response?.status === 304) {
+      console.log(`✅ Using cached data for ${collectionSlug} (304 Not Modified)`);
+      const cachedResult = await cacheService.get(cacheKey, timeframe, true);
+      if (cachedResult) {
+        return cachedResult.data;
+      }
+    }
+    throw error;
+  }
+}
+
 // Import collections from data file
 import { TOP_COLLECTIONS } from '../data/collections';
 
@@ -307,16 +321,63 @@ export const fetchTopCollections = async (limit = 500) => {
   try {
     console.log(`🔄 Fetching top ${limit} collections from projects API`);
     
-    // Check cache first
+    // Check cache first with stale-while-revalidate
     const cacheKey = `top-collections-${limit}`;
-    const cachedData = await cacheService.get(cacheKey, '1h'); // Cache for 1 hour
-    if (cachedData) {
-      console.log(`✅ Using cached top collections data (${cachedData.collections?.length} collections)`);
-      return cachedData;
+    const cachedResult = await cacheService.get(cacheKey, '1h', true);
+    
+    if (cachedResult && !cachedResult.isStale) {
+      console.log(`✅ Using fresh cached top collections data (${cachedResult.data.collections?.length} collections)`);
+      return cachedResult.data;
     }
     
-    console.log(`🌐 Making API request to fetch all collections...`);
-    const response = await apiClient.get('/projects');
+    // If we have stale data, return it and fetch fresh in background
+    if (cachedResult && cachedResult.isStale) {
+      console.log(`⚡ Using stale collections data, refreshing in background`);
+      
+      // Fetch fresh in background
+      fetchFreshCollections(limit, cacheKey).catch(err => {
+        console.warn('Background collections refresh failed:', err);
+      });
+      
+      return cachedResult.data;
+    }
+    
+    // Use request deduplication
+    return await cacheService.deduplicate(cacheKey, async () => {
+      return await fetchFreshCollections(limit, cacheKey);
+    });
+  } catch (error) {
+    console.error('❌ Error fetching top collections:', error);
+    
+    let errorMessage = 'Failed to fetch top collections';
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 404) {
+        errorMessage = 'Projects endpoint not found - API may have changed';
+      } else if (status === 429) {
+        errorMessage = 'Rate limit exceeded while fetching collections';
+      } else {
+        errorMessage = `API Error (${status}): ${error.response.data?.message || error.response.statusText}`;
+      }
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'Network error - Unable to reach projects API';
+    }
+    
+    return {
+      success: false,
+      error: errorMessage,
+      collections: [],
+      totalFetched: 0
+    };
+  }
+};
+
+/**
+ * Internal function to fetch fresh collections data
+ */
+async function fetchFreshCollections(limit, cacheKey) {
+  console.log(`🌐 Making API request to fetch all collections...`);
+  const response = await apiClient.get('/projects');
     
     console.log(`📄 Received ${response.data?.length || 0} collections`);
     
@@ -358,32 +419,7 @@ export const fetchTopCollections = async (limit = 500) => {
     await cacheService.set(cacheKey, result, '1h');
     
     return result;
-    
-  } catch (error) {
-    console.error('❌ Error fetching top collections:', error);
-    
-    let errorMessage = 'Failed to fetch top collections';
-    if (error.response) {
-      const status = error.response.status;
-      if (status === 404) {
-        errorMessage = 'Projects endpoint not found - API may have changed';
-      } else if (status === 429) {
-        errorMessage = 'Rate limit exceeded while fetching collections';
-      } else {
-        errorMessage = `API Error (${status}): ${error.response.data?.message || error.response.statusText}`;
-      }
-    } else if (error.code === 'ENOTFOUND') {
-      errorMessage = 'Network error - Unable to reach projects API';
-    }
-    
-    return {
-      success: false,
-      error: errorMessage,
-      collections: [],
-      totalFetched: 0
-    };
-  }
-};
+}
 
 /**
  * Get current floor price for a collection
