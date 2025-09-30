@@ -9,9 +9,16 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        // Create a vendor chunk for node_modules to keep app chunks smaller
         manualChunks(id) {
-          if (id.includes('node_modules')) return 'vendor'
+          if (id.includes('node_modules')) {
+            // Split large libraries into separate chunks
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react'
+            }
+            // Add more specific splits for other large dependencies
+            // Example: if (id.includes('lodash')) return 'vendor-lodash'
+            return 'vendor'
+          }
         },
       },
     },
