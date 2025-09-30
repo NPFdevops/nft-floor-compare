@@ -472,8 +472,8 @@ function App() {
             
             {/* Charts Section */}
             <div className="flex flex-1 min-h-[500px]" id="chart-container">
-              {/* Use stacked layout on mobile, split layout on desktop (unless user explicitly chose stacked) */}
-              {isMobile || layout === 'stacked' ? (
+              {/* Use stacked layout on mobile, split layout on desktop (unless user explicitly chose vertical/stacked) */}
+              {isMobile || layout === 'vertical' ? (
                 // Stacked layout - one combined chart with Apply button centered below
                 <div className="w-full h-full flex flex-col">
                   <div className={`flex-1 transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
