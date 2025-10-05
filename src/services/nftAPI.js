@@ -45,40 +45,41 @@ const apiClient = axios.create({
 });
 
 /**
- * Convert API response array to Chart.js compatible format
- * @param {Array} apiData - Array of price data objects from API
+ * Convert API response to Chart.js compatible format
+ * @param {Object} apiData - API response object with timestamps and floorNative arrays
  * @returns {Array} Array of {x: Date, y: price} objects
  */
 const formatPriceData = (apiData) => {
-  if (!apiData || !Array.isArray(apiData)) {
-    console.log('formatPriceData: No data or not array:', apiData);
+  if (!apiData || !apiData.timestamps || !apiData.floorNative) {
+    console.log('formatPriceData: Invalid data structure:', apiData);
     return [];
   }
   
-  console.log('formatPriceData: Processing', apiData.length, 'data points');
-  console.log('formatPriceData: Sample data point:', apiData[0]);
+  const { timestamps, floorNative } = apiData;
   
-  return apiData.map((dataPoint, index) => {
-    // Handle different timestamp formats (seconds, milliseconds, or microseconds)
-    let timestamp = dataPoint.timestamp;
-    if (timestamp > 1e12) {
-      // Likely microseconds, convert to milliseconds
-      timestamp = timestamp / 1000;
-    } else if (timestamp < 1e10) {
-      // Likely seconds, convert to milliseconds
-      timestamp = timestamp * 1000;
-    }
-    // Otherwise assume it's already in milliseconds
-    
+  if (!Array.isArray(timestamps) || !Array.isArray(floorNative)) {
+    console.log('formatPriceData: timestamps or floorNative not arrays');
+    return [];
+  }
+  
+  if (timestamps.length !== floorNative.length) {
+    console.log('formatPriceData: Mismatched array lengths:', timestamps.length, 'vs', floorNative.length);
+    return [];
+  }
+  
+  console.log('formatPriceData: Processing', timestamps.length, 'data points');
+  console.log('formatPriceData: Sample timestamp:', timestamps[0], 'Sample price:', floorNative[0]);
+  
+  return timestamps.map((timestamp, index) => {
+    // New API returns timestamps in milliseconds
     const result = {
       x: new Date(timestamp),
-      y: parseFloat(dataPoint.lowestNative) || 0
+      y: parseFloat(floorNative[index]) || 0
     };
     
     if (index < 3) {
       console.log(`formatPriceData[${index}]:`, {
-        originalTimestamp: dataPoint.timestamp,
-        convertedTimestamp: timestamp,
+        timestamp: timestamp,
         date: result.x,
         price: result.y
       });
@@ -91,25 +92,21 @@ const formatPriceData = (apiData) => {
 /**
  * Fetch floor price history for a specific NFT collection with smart caching
  * @param {string} collectionSlug - The collection identifier/slug
- * @param {string} granularity - Time granularity ('1d', '1h', etc.)
- * @param {number} startTimestamp - Start timestamp in seconds (optional)
- * @param {number} endTimestamp - End timestamp in seconds (optional)
- * @param {string} timeframe - Timeframe for cache TTL ('30d', '90d', '1Y', 'YTD')
+ * @param {string} granularity - Time granularity (not used with new endpoint, kept for compatibility)
+ * @param {number} startTimestamp - Start timestamp in seconds (not used with new endpoint, kept for compatibility)
+ * @param {number} endTimestamp - End timestamp in seconds (not used with new endpoint, kept for compatibility)
+ * @param {string} timeframe - Timeframe for cache TTL (not used with new endpoint, kept for compatibility)
  * @returns {Promise<Object>} Floor price data with timestamps and prices
  */
 export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d', startTimestamp = null, endTimestamp = null, timeframe = '30d') => {
   try {
-    // Use provided timestamps or default to last 30 days
-    const endTime = endTimestamp || Math.floor(Date.now() / 1000);
-    const startTime = startTimestamp || (endTime - (30 * 24 * 60 * 60));
-    
-    // Generate cache key with timeframe
-    const cacheKey = cacheService.generateCacheKey(collectionSlug, granularity, startTime, endTime, timeframe);
+    // Generate cache key (simplified since new endpoint doesn't use timeframes)
+    const cacheKey = `${collectionSlug}-charts-1d`;
     
     // Try to get from cache first (multi-layer cache with stale support)
-    const cachedResult = await cacheService.get(cacheKey, timeframe, true);
+    const cachedResult = await cacheService.get(cacheKey, '1h', true);
     if (cachedResult && !cachedResult.isStale) {
-      console.log(`✅ Using fresh cached data for ${collectionSlug} (${timeframe})`);
+      console.log(`✅ Using fresh cached data for ${collectionSlug}`);
       return cachedResult.data;
     }
     
@@ -120,7 +117,7 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
       const staleData = cachedResult.data;
       
       // Fetch fresh data in background (don't await)
-      fetchFreshData(collectionSlug, granularity, startTime, endTime, timeframe, cacheKey).catch(err => {
+      fetchFreshData(collectionSlug, cacheKey).catch(err => {
         console.warn('Background refresh failed:', err);
       });
       
@@ -129,7 +126,7 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
     
     // Use request deduplication to prevent duplicate simultaneous requests
     return await cacheService.deduplicate(cacheKey, async () => {
-      return await fetchFreshData(collectionSlug, granularity, startTime, endTime, timeframe, cacheKey);
+      return await fetchFreshData(collectionSlug, cacheKey);
     });
   } catch (error) {
     
@@ -199,15 +196,11 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
  * Internal function to fetch fresh data from API
  * Separated for reuse in background refresh
  */
-async function fetchFreshData(collectionSlug, granularity, startTime, endTime, timeframe, cacheKey) {
-  console.log(`🔄 Fetching fresh data for ${collectionSlug} (${timeframe})`);
+async function fetchFreshData(collectionSlug, cacheKey) {
+  console.log(`🔄 Fetching fresh data for ${collectionSlug}`);
   console.log('API request params:', {
     collectionSlug,
-    granularity,
-    startTime,
-    endTime,
-    startDate: new Date(startTime * 1000).toISOString().split('T')[0],
-    endDate: new Date(endTime * 1000).toISOString().split('T')[0]
+    endpoint: `/projects/${collectionSlug}/charts/1d`
   });
   
   // Check for cached ETag
@@ -215,12 +208,7 @@ async function fetchFreshData(collectionSlug, granularity, startTime, endTime, t
   const cachedETagResult = await cacheService.get(etagCacheKey, '30m');
   const cachedETag = cachedETagResult?.data || null;
   
-  const requestConfig = {
-    params: {
-      start: startTime,
-      end: endTime
-    }
-  };
+  const requestConfig = {};
   
   // Add If-None-Match header if we have a cached ETag
   if (cachedETag) {
@@ -231,18 +219,18 @@ async function fetchFreshData(collectionSlug, granularity, startTime, endTime, t
   
   try {
     const response = await apiClient.get(
-      `/projects/${collectionSlug}/history/pricefloor/${granularity}`,
+      `/projects/${collectionSlug}/charts/1d`,
       requestConfig
     );
     
     console.log('API response status:', response.status);
-    console.log('API response data length:', response.data?.length);
+    console.log('API response data structure:', Object.keys(response.data));
     
     const data = response.data;
     const formattedPriceHistory = formatPriceData(data);
     
-    // Extract collection name from first data point
-    const collectionName = data.length > 0 ? (data[0].slug || data[0].collection || collectionSlug) : collectionSlug;
+    // Extract collection name from response
+    const collectionName = data.slug || collectionSlug;
     
     const result = {
       success: true,
@@ -251,14 +239,14 @@ async function fetchFreshData(collectionSlug, granularity, startTime, endTime, t
       priceHistory: formattedPriceHistory,
       rawData: {
         dataPoints: data,
-        timestamps: data.map(d => d.timestamp),
-        floorEth: data.map(d => d.lowestNative),
-        floorUsd: data.map(d => d.lowestUsd)
+        timestamps: data.timestamps,
+        floorEth: data.floorNative,
+        floorUsd: data.floorUsd
       }
     };
     
-    // Cache the result with timeframe-aware TTL
-    await cacheService.set(cacheKey, result, timeframe);
+    // Cache the result with 1 hour TTL
+    await cacheService.set(cacheKey, result, '1h');
     
     // Cache ETag for future conditional requests
     const etag = response.headers.etag;
@@ -271,7 +259,7 @@ async function fetchFreshData(collectionSlug, granularity, startTime, endTime, t
     // Handle 304 Not Modified - return cached data
     if (error.response?.status === 304) {
       console.log(`✅ Using cached data for ${collectionSlug} (304 Not Modified)`);
-      const cachedResult = await cacheService.get(cacheKey, timeframe, true);
+      const cachedResult = await cacheService.get(cacheKey, '1h', true);
       if (cachedResult) {
         return cachedResult.data;
       }
@@ -419,6 +407,92 @@ async function fetchFreshCollections(limit, cacheKey) {
     await cacheService.set(cacheKey, result, '1h');
     
     return result;
+}
+
+/**
+ * Fetch detailed collection information
+ * @param {string} collectionSlug - The collection identifier/slug
+ * @returns {Promise<Object>} Collection details including metrics
+ */
+export const fetchCollectionDetails = async (collectionSlug) => {
+  try {
+    console.log(`🔄 Fetching collection details for ${collectionSlug}`);
+    
+    // Check cache first with stale-while-revalidate
+    const cacheKey = `collection-details-${collectionSlug}`;
+    const cachedResult = await cacheService.get(cacheKey, '30m', true);
+    
+    if (cachedResult && !cachedResult.isStale) {
+      console.log(`✅ Using fresh cached collection details for ${collectionSlug}`);
+      return cachedResult.data;
+    }
+    
+    // If we have stale data, return it and fetch fresh in background
+    if (cachedResult && cachedResult.isStale) {
+      console.log(`⚡ Using stale collection details for ${collectionSlug}, refreshing in background`);
+      
+      // Fetch fresh in background
+      fetchFreshCollectionDetails(collectionSlug, cacheKey).catch(err => {
+        console.warn('Background collection details refresh failed:', err);
+      });
+      
+      return cachedResult.data;
+    }
+    
+    // Use request deduplication
+    return await cacheService.deduplicate(cacheKey, async () => {
+      return await fetchFreshCollectionDetails(collectionSlug, cacheKey);
+    });
+  } catch (error) {
+    console.error(`❌ Error fetching collection details for ${collectionSlug}:`, error);
+    
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch collection details',
+      data: null
+    };
+  }
+};
+
+/**
+ * Internal function to fetch fresh collection details
+ */
+async function fetchFreshCollectionDetails(collectionSlug, cacheKey) {
+  console.log(`🌐 Making API request for collection details: ${collectionSlug}`);
+  const response = await apiClient.get(`/projects/${collectionSlug}`);
+  
+  console.log('Collection details response:', response.data);
+  
+  const collection = response.data;
+  
+  if (!collection) {
+    throw new Error('Collection not found');
+  }
+  
+  // Extract all the metrics we need
+  const details = {
+    slug: collection.slug,
+    name: collection.name,
+    image: collection.imageBlur || `https://api.dicebear.com/7.x/shapes/svg?seed=${collection.slug}`,
+    floorPrice: collection.stats?.floorInfo?.currentFloorNative,
+    floorPriceUsd: collection.stats?.floorInfo?.currentFloorUsd,
+    marketCap: collection.stats?.floorCapUsd,
+    totalSupply: collection.stats?.totalSupply,
+    owners: collection.stats?.totalOwners,
+    listedItems: collection.stats?.listedCount || collection.stats?.totalListed,
+    volume24h: collection.stats?.salesTemporalityUsd?.volume?.val24h,
+    volumeChange24h: collection.stats?.salesTemporalityUsd?.volume?.change24h
+  };
+  
+  const result = {
+    success: true,
+    data: details
+  };
+  
+  // Cache the result for 30 minutes
+  await cacheService.set(cacheKey, result, '30m');
+  
+  return result;
 }
 
 /**

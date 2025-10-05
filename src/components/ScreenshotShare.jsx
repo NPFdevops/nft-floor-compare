@@ -259,7 +259,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
       <div className="block sm:hidden">
         <button
           onClick={() => setShowActionSheet(true)}
-          className="w-full flex items-center justify-center gap-2 h-12 px-4 rounded-none border-2 border-black bg-blue-500 text-white font-bold text-sm leading-normal hover:bg-blue-600 transition-all duration-200 shadow-[4px_4px_0px_#000000] hover:scale-105"
+          className="w-full flex items-center justify-center gap-2 h-12 px-4 rounded-none border-2 border-black bg-blue-500 text-white font-bold text-sm leading-normal hover:bg-blue-600 transition-all duration-200 hover:scale-105"
           style={{
             transform: showActionSheet ? 'scale(0.98)' : 'scale(1)',
           }}
@@ -274,7 +274,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
         <button 
           onClick={captureScreenshot}
           disabled={isCapturing}
-          className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-white text-black gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_#000000]"
+          className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-white text-black gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-gray-100 transition-colors"
           title="Capture and download screenshot"
         >
           {isCapturing ? (
@@ -292,7 +292,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
 
         <button 
           onClick={shareUrl}
-          className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-blue-500 text-white gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-blue-600 transition-colors shadow-[4px_4px_0px_#000000]"
+          className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-blue-500 text-white gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-blue-600 transition-colors"
           title="Share comparison URL"
         >
           <span className="material-symbols-outlined">link</span>

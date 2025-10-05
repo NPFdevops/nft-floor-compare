@@ -57,7 +57,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
     const collections = [collection, collection2].filter(Boolean);
     
   return (
-    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white shadow-[8px_8px_0px_#000000]">
+    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white">
       <div className="flex flex-col border-b-2 border-black px-6 py-4 flex-shrink-0">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2 flex-wrap">
@@ -132,7 +132,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
   const priceChange = getPriceChange();
 
   return (
-    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white shadow-[8px_8px_0px_#000000]">
+    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white">
       <div className="flex flex-col border-b-2 border-black px-6 py-4 flex-shrink-0">
         <div className="flex justify-between items-start">
           <div 

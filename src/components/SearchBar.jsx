@@ -137,7 +137,7 @@ const SearchBar = ({
       </form>
 
       {isDropdownOpen && (filteredCollections.length > 0 || collectionsState.isLoading) && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-black shadow-lg max-h-96 overflow-hidden" style={{fontFamily: 'Space Grotesk, sans-serif'}}>
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-black max-h-96 overflow-hidden" style={{fontFamily: 'Space Grotesk, sans-serif'}}>
           <div className="px-4 py-3 border-b-2 border-black bg-gray-50">
             <span className="text-black font-bold text-sm">
               Collections {collectionsState.collections.length > 0 && `(${collectionsState.collections.length})`}
@@ -191,23 +191,7 @@ const SearchBar = ({
         </div>
       )}
 
-      {selectedCollection && (
-        <div className="mt-2 flex items-center gap-3 p-3 bg-[var(--accent-color)]/20 border-2 border-[var(--accent-color)] rounded-none">
-          <div className="flex-1 flex items-center justify-between">
-            <span className="text-black font-medium">{selectedCollection.name}</span>
-            {selectedCollection.ranking && (
-              <span className="text-black text-sm font-bold">#{selectedCollection.ranking}</span>
-            )}
-          </div>
-          <button 
-            onClick={handleClear} 
-            className="text-gray-600 hover:text-black transition-colors"
-            aria-label="Remove collection"
-          >
-            <span className="material-symbols-outlined text-base">close</span>
-          </button>
-        </div>
-      )}
+      {/* Selected collection display hidden per requirements */}
     </div>
   );
 };

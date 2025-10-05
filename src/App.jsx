@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SearchBar from './components/SearchBar';
 import ChartDisplay from './components/ChartDisplay';
-import LayoutToggle from './components/LayoutToggle';
 import ScreenshotShare from './components/ScreenshotShare';
-import TimeframeSelector from './components/TimeframeSelector';
-import ApplyButton from './components/ApplyButton';
 import CacheStats from './components/CacheStats';
+import CollectionMetrics from './components/CollectionMetrics';
+import PriceBanner from './components/PriceBanner';
 import { fetchFloorPriceHistory } from './services/nftAPI';
-import { getDefaultDateRange, dateToTimestamp, getOptimalGranularity, isValidDateRange, validateTimestamps } from './utils/dateUtils';
 import { parseUrlParams, createUrlParams } from './utils/urlUtils';
 import { collectionsService } from './services/collectionsService';
 import { posthogService } from './services/posthogService';
@@ -23,19 +21,12 @@ function App() {
   
   const [collection1, setCollection1] = useState(null);
   const [collection2, setCollection2] = useState(null);
-  const [layout, setLayout] = useState(initialUrlState.layout); // Initialize from URL
-  const [timeframe, setTimeframe] = useState(initialUrlState.timeframe); // Initialize from URL
-  const [hasPendingChanges, setHasPendingChanges] = useState(false); // Track pending timeframe changes
+  const [layout, setLayout] = useState(initialUrlState.layout || 'vertical'); // Initialize from URL, default to vertical (stacked)
   const [loading, setLoading] = useState({ collection1: false, collection2: false });
   const [error, setError] = useState({ collection1: null, collection2: null });
   const [isInitialized, setIsInitialized] = useState(false); // Track if URL initialization is complete
   const [isMobile, setIsMobile] = useState(false); // Track if viewport is mobile size
   
-  // Date range state
-  const defaultRange = getDefaultDateRange();
-  const [startDate, setStartDate] = useState(defaultRange.startDate);
-  const [endDate, setEndDate] = useState(defaultRange.endDate);
-
   // Responsive layout effect - detect mobile viewport
   useEffect(() => {
     const checkMobile = () => {
@@ -51,59 +42,6 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Debug: Track timeframe and pending changes state
-  useEffect(() => {
-    console.log('🔍 Timeframe state changed to:', timeframe);
-  }, [timeframe]);
-  
-  useEffect(() => {
-    console.log('🟡 Pending changes state:', hasPendingChanges ? 'HAS PENDING' : 'NO PENDING');
-  }, [hasPendingChanges]);
-
-  // Helper function to calculate date range based on timeframe
-  const calculateDateRange = (timeframeValue) => {
-    const today = new Date();
-    const end = new Date(today);
-    end.setHours(23, 59, 59, 999); // End of today
-    
-    // Ensure end date is never in the future
-    const now = new Date();
-    if (end > now) {
-      end.setTime(now.getTime());
-    }
-    
-    const start = new Date(end);
-    
-    switch (timeframeValue) {
-      case '30d':
-        start.setDate(end.getDate() - 30);
-        start.setHours(0, 0, 0, 0);
-        break;
-      case '90d':
-        start.setDate(end.getDate() - 90);
-        start.setHours(0, 0, 0, 0);
-        break;
-      case '1Y':
-        start.setTime(end.getTime() - (365 * 24 * 60 * 60 * 1000));
-        start.setHours(0, 0, 0, 0);
-        break;
-      case 'YTD':
-        start.setFullYear(end.getFullYear(), 0, 1); // January 1st
-        start.setHours(0, 0, 0, 0);
-        break;
-      default:
-        start.setDate(end.getDate() - 30);
-        start.setHours(0, 0, 0, 0);
-    }
-    
-    return {
-      start,
-      end,
-      startDateStr: start.toISOString().split('T')[0],
-      endDateStr: end.toISOString().split('T')[0]
-    };
-  };
-
   // URL initialization effect - load collections from URL on first load
   useEffect(() => {
     if (isInitialized) return; // Only run once
@@ -111,25 +49,20 @@ function App() {
     console.log('🔗 Initializing from URL params:', initialUrlState);
     
     const initializeFromUrl = async () => {
-      // Calculate date range based on URL timeframe
-      const dateRange = calculateDateRange(initialUrlState.timeframe);
-      setStartDate(dateRange.startDateStr);
-      setEndDate(dateRange.endDateStr);
-      
       // Load collections from URL if they exist
       const loadPromises = [];
       
       if (initialUrlState.collection1Slug) {
         console.log('🔗 Loading collection 1 from URL:', initialUrlState.collection1Slug);
         loadPromises.push(
-          handleCollectionSearchWithTimeframe(initialUrlState.collection1Slug, 1, initialUrlState.timeframe)
+          handleCollectionSearch(initialUrlState.collection1Slug, 1)
         );
       }
       
       if (initialUrlState.collection2Slug) {
         console.log('🔗 Loading collection 2 from URL:', initialUrlState.collection2Slug);
         loadPromises.push(
-          handleCollectionSearchWithTimeframe(initialUrlState.collection2Slug, 2, initialUrlState.timeframe)
+          handleCollectionSearch(initialUrlState.collection2Slug, 2)
         );
       }
       
@@ -150,7 +83,7 @@ function App() {
   useEffect(() => {
     if (!isInitialized) return; // Don't update URL during initialization
     
-    const params = createUrlParams({ collection1, collection2, timeframe, layout });
+    const params = createUrlParams({ collection1, collection2, layout });
     const currentParams = searchParams.toString();
     const newParams = params.toString();
     
@@ -159,7 +92,7 @@ function App() {
       console.log('🔗 Updating URL params:', { from: currentParams, to: newParams });
       setSearchParams(params, { replace: true });
     }
-  }, [collection1, collection2, timeframe, layout, isInitialized, searchParams, setSearchParams]);
+  }, [collection1, collection2, layout, isInitialized, searchParams, setSearchParams]);
 
   // Helper function to get proper collection name from slug
   const getCollectionName = (slug) => {
@@ -167,17 +100,10 @@ function App() {
     return collection ? collection.name : slug;
   };
 
-  const handleCollectionSearchWithTimeframe = async (collectionSlug, collectionNumber, explicitTimeframe = null) => {
+  const handleCollectionSearch = async (collectionSlug, collectionNumber) => {
     if (!collectionSlug) return;
 
-    const effectiveTimeframe = explicitTimeframe || timeframe;
-    console.log('🗖️ handleCollectionSearchWithTimeframe:', { collectionSlug, collectionNumber, effectiveTimeframe });
-
-    // Validate date range
-    if (!isValidDateRange(startDate, endDate)) {
-      setError(prev => ({ ...prev, [`collection${collectionNumber}`]: 'Invalid date range' }));
-      return;
-    }
+    console.log('🗖️ handleCollectionSearch:', { collectionSlug, collectionNumber });
 
     const loadingKey = `collection${collectionNumber}`;
     const errorKey = `collection${collectionNumber}`;
@@ -186,23 +112,8 @@ function App() {
     setError(prev => ({ ...prev, [errorKey]: null }));
 
     try {
-      const rawStartTimestamp = dateToTimestamp(startDate);
-      const rawEndTimestamp = dateToTimestamp(endDate);
-      
-      // Validate and clamp timestamps to reasonable bounds
-      const { startTimestamp, endTimestamp } = validateTimestamps(rawStartTimestamp, rawEndTimestamp);
-      
-      const granularity = getOptimalGranularity(startDate, endDate);
-      
-      console.log('🚀 Making API call with validated timestamps:', {
-        timeframe: effectiveTimeframe,
-        startTimestamp,
-        endTimestamp,
-        startDate: new Date(startTimestamp * 1000).toISOString().split('T')[0],
-        endDate: new Date(endTimestamp * 1000).toISOString().split('T')[0]
-      });
-      
-      const result = await fetchFloorPriceHistory(collectionSlug, granularity, startTimestamp, endTimestamp, effectiveTimeframe);
+      // New API endpoint doesn't use timestamps or granularity, pass null/default values
+      const result = await fetchFloorPriceHistory(collectionSlug, '1d', null, null, '30d');
       
       if (result.success) {
         const collectionSetter = collectionNumber === 1 ? setCollection1 : setCollection2;
@@ -211,11 +122,16 @@ function App() {
           slug: collectionSlug,
           name: properCollectionName,
           data: result.priceHistory,
-          dateRange: { startDate, endDate },
-          granularity,
-          timeframe: effectiveTimeframe
+          granularity: '1d'
         });
-        console.log('✅ Successfully updated collection', collectionNumber, properCollectionName, 'with timeframe:', effectiveTimeframe);
+        console.log('✅ Successfully updated collection', collectionNumber, properCollectionName);
+        
+        // Track collection search analytics
+        posthogService.track('collection_searched', {
+          collection_slug: collectionSlug,
+          collection_number: collectionNumber,
+          layout: layout
+        });
       } else {
         setError(prev => ({ ...prev, [errorKey]: result.error }));
       }
@@ -227,18 +143,6 @@ function App() {
     }
   };
 
-  // Legacy function that uses current timeframe state
-  const handleCollectionSearch = async (collectionSlug, collectionNumber) => {
-    // Track collection search analytics
-    posthogService.track('collection_searched', {
-      collection_slug: collectionSlug,
-      collection_number: collectionNumber,
-      timeframe: timeframe,
-      layout: layout
-    });
-    
-    return handleCollectionSearchWithTimeframe(collectionSlug, collectionNumber, timeframe);
-  };
 
   const clearCollection = (collectionNumber) => {
     const collectionSetter = collectionNumber === 1 ? setCollection1 : setCollection2;
@@ -248,81 +152,44 @@ function App() {
     setError(prev => ({ ...prev, [errorKey]: null }));
   };
 
-  const handleDateChange = (newStartDate, newEndDate, explicitTimeframe = null) => {
-    console.log('📅 Date range changed in App:', { newStartDate, newEndDate, explicitTimeframe });
+  // Handle swapping collections
+  const handleSwapCollections = () => {
+    console.log('🔄 Swapping collections');
     
-    const effectiveTimeframe = explicitTimeframe || timeframe;
-    console.log('📅 Using timeframe:', effectiveTimeframe);
+    // Swap the collections
+    const tempCollection = collection1;
+    setCollection1(collection2);
+    setCollection2(tempCollection);
     
-    setStartDate(newStartDate);
-    setEndDate(newEndDate);
+    // Swap the loading states
+    const tempLoading = loading.collection1;
+    setLoading(prev => ({
+      ...prev,
+      collection1: prev.collection2,
+      collection2: tempLoading
+    }));
     
-    // Refetch data for both collections if they exist and dates are valid
-    if (newStartDate && newEndDate && isValidDateRange(newStartDate, newEndDate)) {
-      console.log('📅 Valid date range, refetching data for collections');
-      
-      if (collection1) {
-        console.log('🔄 Refetching collection1:', collection1.slug, 'with timeframe:', effectiveTimeframe);
-        handleCollectionSearchWithTimeframe(collection1.slug, 1, effectiveTimeframe);
-      }
-      if (collection2) {
-        console.log('🔄 Refetching collection2:', collection2.slug, 'with timeframe:', effectiveTimeframe);
-        handleCollectionSearchWithTimeframe(collection2.slug, 2, effectiveTimeframe);
-      }
-    } else {
-      console.log('⚠️ Invalid date range or missing dates:', {
-        isValidRange: newStartDate && newEndDate ? isValidDateRange(newStartDate, newEndDate) : false,
-        hasStartDate: !!newStartDate,
-        hasEndDate: !!newEndDate
-      });
-    }
-  };
-
-  const handleRangeChange = (days) => {
-    console.log('Range changed from chart:', days, 'days');
+    // Swap the error states
+    const tempError = error.collection1;
+    setError(prev => ({
+      ...prev,
+      collection1: prev.collection2,
+      collection2: tempError
+    }));
     
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - days);
-    
-    const endDateStr = end.toISOString().split('T')[0];
-    const startDateStr = start.toISOString().split('T')[0];
-    
-    handleDateChange(startDateStr, endDateStr);
-  };
-
-
-  // Handle timeframe selection (visual state only)
-  const handleTimeframeChange = (newTimeframe) => {
-    console.log('🕐 Timeframe selected:', newTimeframe);
-    
-    // Track timeframe change analytics
-    posthogService.track('timeframe_changed', {
-      previous_timeframe: timeframe,
-      new_timeframe: newTimeframe,
-      has_collection1: !!collection1,
-      has_collection2: !!collection2,
+    // Track analytics
+    posthogService.track('collections_swapped', {
+      from_collection: collection1?.slug,
+      to_collection: collection2?.slug,
       layout: layout
     });
     
-    // Calculate date range for the new timeframe
-    const dateRange = calculateDateRange(newTimeframe);
-    
-    // Update visual state immediately
-    setTimeframe(newTimeframe);
-    setStartDate(dateRange.startDateStr);
-    setEndDate(dateRange.endDateStr);
-    
-    // Mark that there are pending changes to apply
-    setHasPendingChanges(true);
-    
-    // Ensure we're marked as initialized for URL sync
-    if (!isInitialized) {
-      setIsInitialized(true);
+    // Add haptic feedback on mobile
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(100);
     }
-    
-    console.log('🕐 Timeframe and date range updated, pending changes marked');
   };
+
   
   // Handle layout changes with URL sync
   const handleLayoutChange = (newLayout) => {
@@ -333,8 +200,7 @@ function App() {
       previous_layout: layout,
       new_layout: newLayout,
       has_collection1: !!collection1,
-      has_collection2: !!collection2,
-      timeframe: timeframe
+      has_collection2: !!collection2
     });
     
     setLayout(newLayout);
@@ -342,34 +208,6 @@ function App() {
     // Ensure we're marked as initialized for URL sync
     if (!isInitialized) {
       setIsInitialized(true);
-    }
-  };
-  
-  // Handle applying the selected timeframe (trigger data fetching)
-  const handleApply = () => {
-    console.log('✅ Applying timeframe:', timeframe, 'with date range:', { startDate, endDate });
-    
-    // Track apply action analytics
-    posthogService.track('timeframe_applied', {
-      timeframe: timeframe,
-      start_date: startDate,
-      end_date: endDate,
-      has_collection1: !!collection1,
-      has_collection2: !!collection2,
-      layout: layout
-    });
-    
-    // Clear pending changes since we're applying them now
-    setHasPendingChanges(false);
-    
-    // Refetch data for existing collections with the current timeframe and dates
-    if (collection1) {
-      console.log('🔄 Refetching collection1 with timeframe:', timeframe);
-      handleCollectionSearchWithTimeframe(collection1.slug, 1, timeframe);
-    }
-    if (collection2) {
-      console.log('🔄 Refetching collection2 with timeframe:', timeframe);
-      handleCollectionSearchWithTimeframe(collection2.slug, 2, timeframe);
     }
   };
 
@@ -402,12 +240,12 @@ function App() {
               <a href="https://nftpricefloor.com/nft-drops" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors">
                 Drops
               </a>
-              <span className="text-black font-semibold border-b-2 border-black pb-1">
-                Compare
-              </span>
               <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors">
                 Strategies<sup className="text-xs">TM</sup>
               </a>
+              <span className="text-black font-semibold border-b-2 border-black pb-1">
+                Compare
+              </span>
             </nav>
           </div>
         </header>
@@ -424,132 +262,100 @@ function App() {
               <span className="text-black font-medium">Chart Comparison</span>
             </nav>
             
-            {/* Search Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
-              <SearchBar 
-                placeholder="Search for a collection"
-                onSearch={(slug) => handleCollectionSearch(slug, 1)}
-                onClear={() => clearCollection(1)}
-                loading={loading.collection1}
-                error={error.collection1}
-                selectedCollection={collection1}
-              />
-              <SearchBar 
-                placeholder="Search for a collection"
-                onSearch={(slug) => handleCollectionSearch(slug, 2)}
-                onClear={() => clearCollection(2)}
-                loading={loading.collection2}
-                error={error.collection2}
-                selectedCollection={collection2}
-              />
+            {/* Page Title */}
+            <div className="mb-8">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-black text-left">
+                Collection Comparison
+              </h1>
             </div>
             
-            {/* Layout and Timeframe Controls */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-8">
-              {/* Left side controls */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-                <LayoutToggle 
-                  layout={layout}
-                  onLayoutChange={handleLayoutChange}
-                />
-                <TimeframeSelector
-                  timeframe={timeframe}
-                  onTimeframeChange={handleTimeframeChange}
+            {/* Search Controls */}
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 pb-6">
+              <div className="w-full md:flex-1">
+                <SearchBar 
+                  placeholder="Search for a collection"
+                  onSearch={(slug) => handleCollectionSearch(slug, 1)}
+                  onClear={() => clearCollection(1)}
+                  loading={loading.collection1}
+                  error={error.collection1}
+                  selectedCollection={collection1}
                 />
               </div>
               
-              {/* Right side controls - Screenshot and Share */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <ScreenshotShare 
-                  targetId="chart-container"
-                  collection1={collection1}
-                  collection2={collection2}
-                  timeframe={timeframe}
-                  layout={layout}
+              {/* Swap Button */}
+              {collection1 && collection2 && (
+                <div className="flex-shrink-0">
+                  <button
+                    onClick={handleSwapCollections}
+                    className="flex items-center gap-2 px-4 py-2 border-2 border-black rounded-none text-sm font-bold text-white hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)]"
+                    style={{ 
+                      backgroundColor: '#E3579A',
+                      transition: 'background-color 0.2s ease, transform 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#D1477C'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#E3579A'}
+                    title="Swap collections"
+                  >
+                    <span className="material-symbols-outlined text-lg">swap_horiz</span>
+                    <span className="hidden sm:inline">Swap Collections</span>
+                    <span className="sm:hidden">Swap</span>
+                  </button>
+                </div>
+              )}
+              
+              <div className="w-full md:flex-1">
+                <SearchBar 
+                  placeholder="Search for a collection"
+                  onSearch={(slug) => handleCollectionSearch(slug, 2)}
+                  onClear={() => clearCollection(2)}
+                  loading={loading.collection2}
+                  error={error.collection2}
+                  selectedCollection={collection2}
                 />
               </div>
             </div>
             
+            
+            {/* Price Banner */}
+            <PriceBanner 
+              collection1={collection1}
+              collection2={collection2}
+            />
+            
             {/* Charts Section */}
             <div className="flex flex-1 min-h-[500px]" id="chart-container">
-              {/* Use stacked layout on mobile, split layout on desktop (unless user explicitly chose vertical/stacked) */}
-              {isMobile || layout === 'vertical' ? (
-                // Stacked layout - one combined chart with Apply button centered below
-                <div className="w-full h-full flex flex-col">
-                  <div className={`flex-1 transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
-                    <ChartDisplay 
-                      collection={collection1}
-                      collection2={collection2}
-                      title="Floor Price Comparison"
-                      loading={loading.collection1 || loading.collection2}
-                      error={error.collection1 || error.collection2}
-                      timeframe={timeframe}
-                      onRangeChange={handleRangeChange}
-                      isComparison={true}
-                    />
-                  </div>
-                  {/* Apply Button centered below the stacked chart - only show when there are pending changes */}
-                  {hasPendingChanges && (
-                    <div className="flex justify-center mt-4">
-                      <ApplyButton
-                        onApply={handleApply}
-                        loading={loading.collection1 || loading.collection2}
-                        disabled={!collection1 && !collection2}
-                        timeframe={timeframe}
-                        hasPendingChanges={hasPendingChanges}
-                      />
-                    </div>
-                  )}
+              {/* Always use stacked layout (vertical is default) */}
+              <div className="w-full h-full flex flex-col">
+                <div className="flex-1">
+                  <ChartDisplay 
+                    collection={collection1}
+                    collection2={collection2}
+                    title="Floor Price Comparison"
+                    loading={loading.collection1 || loading.collection2}
+                    error={error.collection1 || error.collection2}
+                    isComparison={true}
+                  />
                 </div>
-              ) : (
-                // Side by side layout - two separate charts with Apply button in the middle
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full h-full relative">
-                  <div className={`transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
-                    <ChartDisplay 
-                      collection={collection1}
-                      title="Collection A"
-                      loading={loading.collection1}
-                      error={error.collection1}
-                      timeframe={timeframe}
-                      onRangeChange={handleRangeChange}
-                    />
-                  </div>
-                  {/* Apply Button positioned in the middle of the two charts - only show when there are pending changes */}
-                  {hasPendingChanges && (
-                    <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
-                      <ApplyButton
-                        onApply={handleApply}
-                        loading={loading.collection1 || loading.collection2}
-                        disabled={!collection1 && !collection2}
-                        timeframe={timeframe}
-                        hasPendingChanges={hasPendingChanges}
-                      />
-                    </div>
-                  )}
-                  <div className={`transition-all duration-300 ${hasPendingChanges ? 'blur-sm opacity-70' : ''}`}>
-                    <ChartDisplay 
-                      collection={collection2}
-                      title="Collection B"
-                      loading={loading.collection2}
-                      error={error.collection2}
-                      timeframe={timeframe}
-                      onRangeChange={handleRangeChange}
-                    />
-                  </div>
-                  {/* Apply Button for mobile - positioned below charts - only show when there are pending changes */}
-                  {hasPendingChanges && (
-                    <div className="md:hidden col-span-full flex justify-center mt-4">
-                      <ApplyButton
-                        onApply={handleApply}
-                        loading={loading.collection1 || loading.collection2}
-                        disabled={!collection1 && !collection2}
-                        timeframe={timeframe}
-                        hasPendingChanges={hasPendingChanges}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
+              </div>
+            </div>
+            
+            {/* Screenshot and Share Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-3 py-6">
+              <ScreenshotShare 
+                targetId="chart-container"
+                collection1={collection1}
+                collection2={collection2}
+                layout={layout}
+              />
+            </div>
+            
+            {/* Collection Metrics */}
+            <div className="mt-8">
+              <CollectionMetrics 
+                collection1={collection1}
+                collection2={collection2}
+                loading={loading}
+              />
             </div>
           </div>
         </div>
@@ -570,18 +376,18 @@ function App() {
             </svg>
             <span className="text-xs font-medium truncate">Drops</span>
           </a>
-          <div className="flex flex-col items-center gap-1 text-black min-w-0">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="text-xs font-bold truncate border-b-2 border-black">Compare</span>
-          </div>
           <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 text-gray-600 hover:text-black transition-colors min-w-0">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
             <span className="text-xs font-medium truncate">Strategies<sup className="text-[8px]">TM</sup></span>
           </a>
+          <div className="flex flex-col items-center gap-1 text-black min-w-0">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span className="text-xs font-bold truncate border-b-2 border-black">Compare</span>
+          </div>
         </div>
       </nav>
       
