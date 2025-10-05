@@ -106,8 +106,8 @@ function App() {
   const reformatCollectionData = (collection, currency) => {
     if (!collection?.rawData?.timestamps) return collection;
     
-    const { timestamps, floorNative, floorUsd } = collection.rawData;
-    const priceArray = currency === 'USD' ? floorUsd : floorNative;
+    const { timestamps, floorEth, floorUsd } = collection.rawData;
+    const priceArray = currency === 'USD' ? floorUsd : floorEth;
     
     if (!priceArray || !Array.isArray(priceArray)) return collection;
     

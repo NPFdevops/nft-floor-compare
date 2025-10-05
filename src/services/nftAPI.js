@@ -56,8 +56,8 @@ const formatPriceData = (apiData, currency = 'ETH') => {
     return [];
   }
   
-  const { timestamps, floorNative, floorUsd } = apiData;
-  const priceArray = currency === 'USD' ? floorUsd : floorNative;
+  const { timestamps, lowestNative, lowestUsd } = apiData;
+  const priceArray = currency === 'USD' ? lowestUsd : lowestNative;
   
   if (!priceArray) {
     console.log(`formatPriceData: ${currency} price data not available:`, apiData);
@@ -235,15 +235,14 @@ async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
     console.log('API response data structure:', Object.keys(response.data));
     console.log('🔍 Debug - Full API response for currency troubleshooting:', {
       timestamps: response.data.timestamps ? `Array(${response.data.timestamps.length})` : 'undefined',
+      lowestNative: response.data.lowestNative ? `Array(${response.data.lowestNative.length})` : 'undefined',
+      lowestUsd: response.data.lowestUsd ? `Array(${response.data.lowestUsd.length})` : 'undefined',
       floorNative: response.data.floorNative ? `Array(${response.data.floorNative.length})` : 'undefined',
       floorUsd: response.data.floorUsd ? `Array(${response.data.floorUsd.length})` : 'undefined',
-      floorUSD: response.data.floorUSD ? `Array(${response.data.floorUSD.length})` : 'undefined',
-      floor_usd: response.data.floor_usd ? `Array(${response.data.floor_usd.length})` : 'undefined',
-      floorPriceUsd: response.data.floorPriceUsd ? `Array(${response.data.floorPriceUsd.length})` : 'undefined',
       allKeys: Object.keys(response.data),
       firstTimestamp: response.data.timestamps?.[0],
-      firstFloorNative: response.data.floorNative?.[0],
-      firstFloorUsd: response.data.floorUsd?.[0],
+      firstLowestNative: response.data.lowestNative?.[0],
+      firstLowestUsd: response.data.lowestUsd?.[0],
       sampleOfFullResponse: JSON.stringify(response.data, null, 2).substring(0, 500)
     });
     
@@ -261,8 +260,8 @@ async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
       rawData: {
         dataPoints: data,
         timestamps: data.timestamps,
-        floorEth: data.floorNative,
-        floorUsd: data.floorUsd
+        floorEth: data.lowestNative,
+        floorUsd: data.lowestUsd
       }
     };
     
