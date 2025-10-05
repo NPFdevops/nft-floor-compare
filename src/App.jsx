@@ -102,6 +102,26 @@ function App() {
     return collection ? collection.name : slug;
   };
 
+  // Helper function to reformat collection data based on current currency
+  const reformatCollectionData = (collection, currency) => {
+    if (!collection?.rawData?.timestamps) return collection;
+    
+    const { timestamps, floorNative, floorUsd } = collection.rawData;
+    const priceArray = currency === 'USD' ? floorUsd : floorNative;
+    
+    if (!priceArray || !Array.isArray(priceArray)) return collection;
+    
+    const reformattedData = timestamps.map((timestamp, index) => ({
+      x: new Date(timestamp),
+      y: parseFloat(priceArray[index]) || 0
+    })).filter(point => point.y > 0).sort((a, b) => a.x - b.x);
+    
+    return {
+      ...collection,
+      data: reformattedData
+    };
+  };
+
   const handleCollectionSearch = async (collectionSlug, collectionNumber) => {
     if (!collectionSlug) return;
 
@@ -124,6 +144,7 @@ function App() {
           slug: collectionSlug,
           name: properCollectionName,
           data: result.priceHistory,
+          rawData: result.rawData, // Store raw data for currency switching
           granularity: '1d'
         });
         console.log('✅ Successfully updated collection', collectionNumber, properCollectionName);
@@ -226,13 +247,8 @@ function App() {
       has_collection2: !!collection2
     });
     
-    // Re-fetch data for both collections with new currency
-    if (collection1) {
-      handleCollectionSearch(collection1.slug, 1);
-    }
-    if (collection2) {
-      handleCollectionSearch(collection2.slug, 2);
-    }
+    // No need to re-fetch data - the ChartDisplay will use reformatted data
+    console.log('📊 Charts will automatically update with reformatted data');
   };
 
   return (
@@ -352,8 +368,8 @@ function App() {
               <div className="w-full h-full flex flex-col">
                 <div className="flex-1">
                   <ChartDisplay 
-                    collection={collection1}
-                    collection2={collection2}
+                    collection={reformatCollectionData(collection1, currency)}
+                    collection2={reformatCollectionData(collection2, currency)}
                     title="Floor Price Comparison"
                     loading={loading.collection1 || loading.collection2}
                     error={error.collection1 || error.collection2}

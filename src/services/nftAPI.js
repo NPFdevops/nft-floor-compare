@@ -108,8 +108,8 @@ const formatPriceData = (apiData, currency = 'ETH') => {
  */
 export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d', startTimestamp = null, endTimestamp = null, timeframe = '30d', currency = 'ETH') => {
   try {
-    // Generate cache key (simplified since new endpoint doesn't use timeframes)
-    const cacheKey = `${collectionSlug}-charts-1d`;
+    // Generate cache key including currency to prevent cross-currency cache conflicts
+    const cacheKey = `${collectionSlug}-charts-1d-${currency}`;
     
     // Try to get from cache first (multi-layer cache with stale support)
     const cachedResult = await cacheService.get(cacheKey, '1h', true);
@@ -233,6 +233,19 @@ async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
     
     console.log('API response status:', response.status);
     console.log('API response data structure:', Object.keys(response.data));
+    console.log('🔍 Debug - Full API response for currency troubleshooting:', {
+      timestamps: response.data.timestamps ? `Array(${response.data.timestamps.length})` : 'undefined',
+      floorNative: response.data.floorNative ? `Array(${response.data.floorNative.length})` : 'undefined',
+      floorUsd: response.data.floorUsd ? `Array(${response.data.floorUsd.length})` : 'undefined',
+      floorUSD: response.data.floorUSD ? `Array(${response.data.floorUSD.length})` : 'undefined',
+      floor_usd: response.data.floor_usd ? `Array(${response.data.floor_usd.length})` : 'undefined',
+      floorPriceUsd: response.data.floorPriceUsd ? `Array(${response.data.floorPriceUsd.length})` : 'undefined',
+      allKeys: Object.keys(response.data),
+      firstTimestamp: response.data.timestamps?.[0],
+      firstFloorNative: response.data.floorNative?.[0],
+      firstFloorUsd: response.data.floorUsd?.[0],
+      sampleOfFullResponse: JSON.stringify(response.data, null, 2).substring(0, 500)
+    });
     
     const data = response.data;
     const formattedPriceHistory = formatPriceData(data, currency);
