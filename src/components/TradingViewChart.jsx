@@ -22,10 +22,10 @@ const TradingViewChart = ({
   ];
 
   const colors = [
-    { line: '#e91e63', top: '#e91e6320', bottom: '#e91e6308' }, // Pink gradient
-    { line: '#9c27b0', top: '#9c27b020', bottom: '#9c27b008' }, // Purple gradient
-    { line: '#673ab7', top: '#673ab720', bottom: '#673ab708' }, // Deep purple gradient
-    { line: '#3f51b5', top: '#3f51b520', bottom: '#3f51b508' }  // Indigo gradient
+    { line: '#e91e63', top: 'rgba(233, 30, 99, 0.2)', bottom: 'rgba(233, 30, 99, 0.05)' }, // Pink gradient
+    { line: '#9c27b0', top: 'rgba(156, 39, 176, 0.2)', bottom: 'rgba(156, 39, 176, 0.05)' }, // Purple gradient  
+    { line: '#673ab7', top: 'rgba(103, 58, 183, 0.2)', bottom: 'rgba(103, 58, 183, 0.05)' }, // Deep purple gradient
+    { line: '#3f51b5', top: 'rgba(63, 81, 181, 0.2)', bottom: 'rgba(63, 81, 181, 0.05)' }  // Indigo gradient
   ];
 
   useEffect(() => {
@@ -41,13 +41,23 @@ const TradingViewChart = ({
       chartRef.current = null;
     }
 
-    // Use setTimeout to ensure DOM is fully ready
+    // Use setTimeout to ensure DOM is fully ready - increased delay for production
     const timer = setTimeout(() => {
       if (!chartContainerRef.current) return;
       
-      // Ensure container has proper dimensions
-      const containerWidth = chartContainerRef.current.clientWidth || 600;
-      const containerHeight = height || 400;
+      // Ensure container has proper dimensions with retries
+      let containerWidth = chartContainerRef.current.clientWidth;
+      let containerHeight = height || 400;
+      
+      // Fallback for when container dimensions aren't ready yet
+      if (!containerWidth || containerWidth < 100) {
+        containerWidth = chartContainerRef.current.offsetWidth || 600;
+      }
+      if (!containerWidth || containerWidth < 100) {
+        containerWidth = 600; // Final fallback
+      }
+      
+      console.log('Chart container dimensions:', { containerWidth, containerHeight });
       
       // Create chart following latest documentation
       const chart = createChart(chartContainerRef.current, {
@@ -119,13 +129,32 @@ const TradingViewChart = ({
             lineColor: colorConfig.line,
             topColor: colorConfig.top,
             bottomColor: colorConfig.bottom,
-            lineWidth: 2,
+            lineWidth: 3, // Increased line width for better visibility
+            lineStyle: 0, // Solid line
+            crosshairMarkerVisible: true,
+            crosshairMarkerRadius: 6,
+            crosshairMarkerBorderColor: colorConfig.line,
+            crosshairMarkerBackgroundColor: colorConfig.line,
+            lastValueVisible: true,
+            priceLineVisible: true,
           });
 
         // Convert data format for TradingView Lightweight Charts
         // Data format: [{ time: '2018-12-22', value: 32.51 }, ...]
         const chartData = collection.data
-          .filter(point => point && point.x && point.y !== undefined && point.y !== null && !isNaN(point.y))
+          .filter(point => {
+            // More robust data validation
+            if (!point || !point.x) return false;
+            if (point.y === undefined || point.y === null) return false;
+            const value = parseFloat(point.y);
+            if (isNaN(value) || value < 0) return false;
+            
+            // Validate date
+            const date = point.x instanceof Date ? point.x : new Date(point.x);
+            if (isNaN(date.getTime())) return false;
+            
+            return true;
+          })
           .map(point => {
             // Convert to YYYY-MM-DD format as required by TradingView
             const date = point.x instanceof Date ? point.x : new Date(point.x);
@@ -133,10 +162,16 @@ const TradingViewChart = ({
             const value = parseFloat(point.y);
             return { time, value };
           })
-          .filter(point => point.value > 0)
           .sort((a, b) => new Date(a.time) - new Date(b.time));
 
         if (chartData.length > 0) {
+          console.log(`Chart data for ${collection.name || `collection ${index}`}:`, {
+            dataPoints: chartData.length,
+            firstPoint: chartData[0],
+            lastPoint: chartData[chartData.length - 1],
+            colorConfig
+          });
+          
           areaSeries.setData(chartData);
           seriesRefs.current[index] = areaSeries;
           
@@ -148,6 +183,11 @@ const TradingViewChart = ({
                 return `${parseFloat(price).toFixed(2)} ETH`;
               },
             },
+          });
+        } else {
+          console.warn(`No valid chart data for collection ${collection.name || index}:`, {
+            originalDataLength: collection.data?.length,
+            collection: collection.name
           });
         }
         } catch (error) {
@@ -183,7 +223,7 @@ const TradingViewChart = ({
         }
         seriesRefs.current = [];
       };
-    }, 100); // 100ms delay to ensure DOM is ready
+    }, 250); // Increased delay for production environments
 
     // Cleanup timeout on unmount
     return () => {
