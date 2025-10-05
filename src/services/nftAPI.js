@@ -46,39 +46,46 @@ const apiClient = axios.create({
 
 /**
  * Convert API response to Chart.js compatible format
- * @param {Object} apiData - API response object with timestamps and floorNative arrays
+ * @param {Object} apiData - API response object with timestamps and floorNative/floorUsd arrays
+ * @param {string} currency - Currency to use ('ETH' or 'USD')
  * @returns {Array} Array of {x: Date, y: price} objects
  */
-const formatPriceData = (apiData) => {
-  if (!apiData || !apiData.timestamps || !apiData.floorNative) {
+const formatPriceData = (apiData, currency = 'ETH') => {
+  if (!apiData || !apiData.timestamps) {
     console.log('formatPriceData: Invalid data structure:', apiData);
     return [];
   }
   
-  const { timestamps, floorNative } = apiData;
+  const { timestamps, floorNative, floorUsd } = apiData;
+  const priceArray = currency === 'USD' ? floorUsd : floorNative;
   
-  if (!Array.isArray(timestamps) || !Array.isArray(floorNative)) {
-    console.log('formatPriceData: timestamps or floorNative not arrays');
+  if (!priceArray) {
+    console.log(`formatPriceData: ${currency} price data not available:`, apiData);
     return [];
   }
   
-  if (timestamps.length !== floorNative.length) {
-    console.log('formatPriceData: Mismatched array lengths:', timestamps.length, 'vs', floorNative.length);
+  if (!Array.isArray(timestamps) || !Array.isArray(priceArray)) {
+    console.log('formatPriceData: timestamps or price array not arrays');
     return [];
   }
   
-  console.log('formatPriceData: Processing', timestamps.length, 'data points');
-  console.log('formatPriceData: Sample timestamp:', timestamps[0], 'Sample price:', floorNative[0]);
+  if (timestamps.length !== priceArray.length) {
+    console.log('formatPriceData: Mismatched array lengths:', timestamps.length, 'vs', priceArray.length);
+    return [];
+  }
+  
+  console.log('formatPriceData: Processing', timestamps.length, 'data points for', currency);
+  console.log('formatPriceData: Sample timestamp:', timestamps[0], 'Sample price:', priceArray[0]);
   
   return timestamps.map((timestamp, index) => {
     // New API returns timestamps in milliseconds
     const result = {
       x: new Date(timestamp),
-      y: parseFloat(floorNative[index]) || 0
+      y: parseFloat(priceArray[index]) || 0
     };
     
     if (index < 3) {
-      console.log(`formatPriceData[${index}]:`, {
+      console.log(`formatPriceData[${index}] (${currency}):`, {
         timestamp: timestamp,
         date: result.x,
         price: result.y
@@ -96,9 +103,10 @@ const formatPriceData = (apiData) => {
  * @param {number} startTimestamp - Start timestamp in seconds (not used with new endpoint, kept for compatibility)
  * @param {number} endTimestamp - End timestamp in seconds (not used with new endpoint, kept for compatibility)
  * @param {string} timeframe - Timeframe for cache TTL (not used with new endpoint, kept for compatibility)
+ * @param {string} currency - Currency to use ('ETH' or 'USD')
  * @returns {Promise<Object>} Floor price data with timestamps and prices
  */
-export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d', startTimestamp = null, endTimestamp = null, timeframe = '30d') => {
+export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d', startTimestamp = null, endTimestamp = null, timeframe = '30d', currency = 'ETH') => {
   try {
     // Generate cache key (simplified since new endpoint doesn't use timeframes)
     const cacheKey = `${collectionSlug}-charts-1d`;
@@ -117,7 +125,7 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
       const staleData = cachedResult.data;
       
       // Fetch fresh data in background (don't await)
-      fetchFreshData(collectionSlug, cacheKey).catch(err => {
+      fetchFreshData(collectionSlug, cacheKey, currency).catch(err => {
         console.warn('Background refresh failed:', err);
       });
       
@@ -126,7 +134,7 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
     
     // Use request deduplication to prevent duplicate simultaneous requests
     return await cacheService.deduplicate(cacheKey, async () => {
-      return await fetchFreshData(collectionSlug, cacheKey);
+      return await fetchFreshData(collectionSlug, cacheKey, currency);
     });
   } catch (error) {
     
@@ -196,7 +204,7 @@ export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d',
  * Internal function to fetch fresh data from API
  * Separated for reuse in background refresh
  */
-async function fetchFreshData(collectionSlug, cacheKey) {
+async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
   console.log(`🔄 Fetching fresh data for ${collectionSlug}`);
   console.log('API request params:', {
     collectionSlug,
@@ -227,7 +235,7 @@ async function fetchFreshData(collectionSlug, cacheKey) {
     console.log('API response data structure:', Object.keys(response.data));
     
     const data = response.data;
-    const formattedPriceHistory = formatPriceData(data);
+    const formattedPriceHistory = formatPriceData(data, currency);
     
     // Extract collection name from response
     const collectionName = data.slug || collectionSlug;

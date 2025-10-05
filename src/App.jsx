@@ -6,6 +6,7 @@ import ScreenshotShare from './components/ScreenshotShare';
 import CacheStats from './components/CacheStats';
 import CollectionMetrics from './components/CollectionMetrics';
 import PriceBanner from './components/PriceBanner';
+import CurrencySwitch from './components/CurrencySwitch';
 import { fetchFloorPriceHistory } from './services/nftAPI';
 import { parseUrlParams, createUrlParams } from './utils/urlUtils';
 import { collectionsService } from './services/collectionsService';
@@ -26,6 +27,7 @@ function App() {
   const [error, setError] = useState({ collection1: null, collection2: null });
   const [isInitialized, setIsInitialized] = useState(false); // Track if URL initialization is complete
   const [isMobile, setIsMobile] = useState(false); // Track if viewport is mobile size
+  const [currency, setCurrency] = useState('ETH'); // Track currency display (ETH or USD)
   
   // Responsive layout effect - detect mobile viewport
   useEffect(() => {
@@ -113,7 +115,7 @@ function App() {
 
     try {
       // New API endpoint doesn't use timestamps or granularity, pass null/default values
-      const result = await fetchFloorPriceHistory(collectionSlug, '1d', null, null, '30d');
+      const result = await fetchFloorPriceHistory(collectionSlug, '1d', null, null, '30d', currency);
       
       if (result.success) {
         const collectionSetter = collectionNumber === 1 ? setCollection1 : setCollection2;
@@ -208,6 +210,28 @@ function App() {
     // Ensure we're marked as initialized for URL sync
     if (!isInitialized) {
       setIsInitialized(true);
+    }
+  };
+
+  // Handle currency change
+  const handleCurrencyChange = (newCurrency) => {
+    console.log('💰 Currency changed to:', newCurrency);
+    setCurrency(newCurrency);
+    
+    // Track currency change analytics
+    posthogService.track('currency_changed', {
+      previous_currency: currency,
+      new_currency: newCurrency,
+      has_collection1: !!collection1,
+      has_collection2: !!collection2
+    });
+    
+    // Re-fetch data for both collections with new currency
+    if (collection1) {
+      handleCollectionSearch(collection1.slug, 1);
+    }
+    if (collection2) {
+      handleCollectionSearch(collection2.slug, 2);
     }
   };
 
@@ -334,6 +358,7 @@ function App() {
                     loading={loading.collection1 || loading.collection2}
                     error={error.collection1 || error.collection2}
                     isComparison={true}
+                    currency={currency}
                   />
                 </div>
               </div>
@@ -341,12 +366,18 @@ function App() {
             
             {/* Screenshot and Share Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-3 py-6">
-              <ScreenshotShare 
-                targetId="chart-container"
-                collection1={collection1}
-                collection2={collection2}
-                layout={layout}
-              />
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+                <CurrencySwitch 
+                  currency={currency}
+                  onCurrencyChange={handleCurrencyChange}
+                />
+                <ScreenshotShare 
+                  targetId="chart-container"
+                  collection1={collection1}
+                  collection2={collection2}
+                  layout={layout}
+                />
+              </div>
             </div>
             
             {/* Collection Metrics */}

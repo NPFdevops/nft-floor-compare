@@ -7,7 +7,8 @@ const TradingViewChart = ({
   collections = [], 
   title = 'Floor Price Chart',
   onRangeChange,
-  height = 400 
+  height = 400,
+  currency = 'ETH'
 }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef();
@@ -82,11 +83,11 @@ const TradingViewChart = ({
             top: 0.1,
             bottom: 0.1,
           },
-          // Format price scale to show ETH suffix
+          // Format price scale based on currency
           priceFormat: {
             type: 'price',
-            precision: 2,
-            minMove: 0.01,
+            precision: currency === 'USD' ? 2 : 2,
+            minMove: currency === 'USD' ? 0.01 : 0.01,
           },
         },
         timeScale: {
@@ -175,12 +176,16 @@ const TradingViewChart = ({
           areaSeries.setData(chartData);
           seriesRefs.current[index] = areaSeries;
           
-          // Add custom tooltip formatting
+          // Add custom tooltip formatting based on currency
           areaSeries.applyOptions({
             priceFormat: {
               type: 'custom',
               formatter: (price) => {
-                return `${parseFloat(price).toFixed(2)} ETH`;
+                if (currency === 'USD') {
+                  return `$${parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                } else {
+                  return `${parseFloat(price).toFixed(2)} ETH`;
+                }
               },
             },
           });
@@ -229,7 +234,7 @@ const TradingViewChart = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [collections, height]);
+  }, [collections, height, currency]);
 
   const handleRangeClick = (range) => {
     setSelectedRange(range.label);

@@ -2,7 +2,7 @@ import React from 'react';
 import TradingViewChart from './TradingViewChart';
 import './TradingViewChart.css';
 
-const ChartDisplay = ({ collection, collection2, title, loading, error, timeframe, onRangeChange, isComparison }) => {
+const ChartDisplay = ({ collection, collection2, title, loading, error, timeframe, onRangeChange, isComparison, currency = 'ETH' }) => {
   // Chart colors matching TradingViewChart
   const chartColors = [
     '#e91e63', // Pink
@@ -41,15 +41,25 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
   const getFloorPrice = (collectionData = collection) => {
     if (!collectionData?.data || collectionData.data.length === 0) return null;
     const latestData = collectionData.data[collectionData.data.length - 1];
-    return latestData?.floorEth || 0;
+    // The data structure uses 'y' for the price value, which now contains either ETH or USD based on currency selection
+    return latestData?.y || 0;
   };
 
   const getPriceChange = (collectionData = collection) => {
     if (!collectionData?.data || collectionData.data.length < 2) return null;
-    const latestPrice = collectionData.data[collectionData.data.length - 1]?.floorEth || 0;
-    const previousPrice = collectionData.data[0]?.floorEth || 0;
+    const latestPrice = collectionData.data[collectionData.data.length - 1]?.y || 0;
+    const previousPrice = collectionData.data[0]?.y || 0;
     if (previousPrice === 0) return null;
     return ((latestPrice - previousPrice) / previousPrice * 100);
+  };
+
+  const formatPrice = (price) => {
+    if (!price) return '0';
+    if (currency === 'USD') {
+      return `$${parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else {
+      return `${parseFloat(price).toFixed(2)} ETH`;
+    }
   };
 
   // Handle comparison view (stacked layout with both collections)
@@ -90,7 +100,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               return (
                 <div key={coll.name} className="text-right">
                   <p className="text-sm font-bold" style={{ color: color }}>{coll.name}</p>
-                  <p className="text-black text-base font-bold eth-price">{parseFloat(price).toFixed(2)} ETH</p>
+                  <p className="text-black text-base font-bold">{formatPrice(price)}</p>
                   {change !== null && (
                     <p className={`text-xs font-medium ${
                       change >= 0 ? 'text-green-600' : 'text-red-600'
@@ -119,6 +129,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               title={title}
               onRangeChange={onRangeChange}
               height={450}
+              currency={currency}
             />
           </div>
         )}
@@ -143,7 +154,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
           </div>
           {floorPrice && (
             <div className="text-right">
-              <p className="text-black text-lg font-bold eth-price">{parseFloat(floorPrice).toFixed(2)} ETH</p>
+              <p className="text-black text-lg font-bold">{formatPrice(floorPrice)}</p>
               {priceChange !== null && (
                 <p className={`text-sm font-medium ${
                   priceChange >= 0 ? 'text-green-600' : 'text-red-600'
@@ -169,6 +180,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               title={title}
               onRangeChange={onRangeChange}
               height={420}
+              currency={currency}
             />
           </div>
         )}
