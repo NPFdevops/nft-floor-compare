@@ -289,7 +289,27 @@ async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
 }
 
 // Import collections from data file
-import { TOP_COLLECTIONS } from '../data/collections';
+import { TOP_COLLECTIONS } from '../data/collections.js';
+
+/**
+ * Generate collection image URL with NFTPriceFloor CDN priority
+ * @param {string} slug - Collection slug
+ * @param {string} apiImage - Image from API (imageBlur)
+ * @returns {string} Image URL with fallback chain
+ */
+const generateCollectionImageUrl = (slug, apiImage = null) => {
+  // Priority 1: NFTPriceFloor CDN - always try this first
+  const nftpfCdnUrl = `https://s3.amazonaws.com/cdn.nftpricefloor/projects/v1/${slug}.png?version=6`;
+  
+  // Priority 2: API provided image (imageBlur)
+  const apiImageUrl = apiImage;
+  
+  // Priority 3: Generate a consistent placeholder
+  const fallbackUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${slug}`;
+  
+  // Return primary CDN URL - image error handling will be done in the component
+  return nftpfCdnUrl;
+};
 
 /**
  * Search for NFT collections by name
@@ -397,7 +417,7 @@ async function fetchFreshCollections(limit, cacheKey) {
           slug: collection.slug,
           name: collection.name,
           ranking: collection.ranking,
-          image: collection.imageBlur || `https://api.dicebear.com/7.x/shapes/svg?seed=${collection.slug}`,
+          image: generateCollectionImageUrl(collection.slug, collection.imageBlur),
           floorPrice: collection.stats?.floorInfo?.currentFloorNative,
           floorPriceUsd: collection.stats?.floorInfo?.currentFloorUsd,
           volume: collection.stats?.salesTemporalityUsd?.volume?.val24h,
@@ -493,7 +513,7 @@ async function fetchFreshCollectionDetails(collectionSlug, cacheKey) {
   const details = {
     slug: collection.slug,
     name: collection.name,
-    image: collection.imageBlur || `https://api.dicebear.com/7.x/shapes/svg?seed=${collection.slug}`,
+    image: generateCollectionImageUrl(collection.slug, collection.imageBlur),
     floorPrice: collection.stats?.floorInfo?.currentFloorNative,
     floorPriceUsd: collection.stats?.floorInfo?.currentFloorUsd,
     marketCap: collection.stats?.floorCapUsd,

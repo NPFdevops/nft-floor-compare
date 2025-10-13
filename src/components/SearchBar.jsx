@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { collectionsService } from '../services/collectionsService';
+import { generateLegacyCollectionImage } from '../data/collections.js';
 
 const SearchBar = ({ 
   placeholder, 
@@ -98,6 +99,32 @@ const SearchBar = ({
     inputRef.current?.focus();
   };
 
+  /**
+   * Handle image loading errors with graceful fallbacks
+   * @param {Event} event - Image error event
+   * @param {string} slug - Collection slug for fallback generation
+   */
+  const handleImageError = (event, slug) => {
+    const img = event.target;
+    const currentSrc = img.src;
+    
+    // Check if we're already showing a fallback to prevent infinite loops
+    if (currentSrc.includes('api.dicebear.com') || currentSrc.includes('ui-avatars.com')) {
+      return;
+    }
+    
+    // If NFTPriceFloor CDN failed, try legacy high-quality image
+    if (currentSrc.includes('cdn.nftpricefloor')) {
+      console.log(`🖼️ NFTPriceFloor CDN image failed for ${slug}, trying legacy fallback`);
+      img.src = generateLegacyCollectionImage(slug);
+      return;
+    }
+    
+    // If legacy image failed, use dicebear as final fallback
+    console.log(`🖼️ Legacy image failed for ${slug}, using dicebear fallback`);
+    img.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${slug}`;
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <form onSubmit={handleSubmit} className="relative">
@@ -150,7 +177,10 @@ const SearchBar = ({
                 <span className="text-gray-600">Loading collections...</span>
               </div>
             ) : (
-              filteredCollections.map((collection) => (
+              filteredCollections.map((collection) => {
+                // Debug logging for image URLs
+                console.log(`🖼️ [${collection.slug}] Image URL:`, collection.image);
+                return (
                 <div
                   key={collection.slug}
                   className="flex items-center p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-200 last:border-b-0"
@@ -162,6 +192,7 @@ const SearchBar = ({
                       alt={collection.name}
                       className="w-full h-full object-cover rounded-lg border border-gray-300"
                       loading="lazy"
+                      onError={(e) => handleImageError(e, collection.slug)}
                     />
                   </div>
                   <div className="flex-1 min-w-0 flex items-center justify-between">
@@ -171,8 +202,8 @@ const SearchBar = ({
                     </span>
                   </div>
                 </div>
-              ))
-            )}
+                );
+              })
           </div>
         </div>
       )}

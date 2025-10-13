@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NFTPriceFloor CDN Image Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .collection { margin: 10px 0; padding: 10px; border: 1px solid #ccc; display: flex; align-items: center; }
+        .collection img { width: 40px; height: 40px; margin-right: 10px; border: 1px solid #ddd; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>NFTPriceFloor CDN Image Test</h1>
+    <div id="collections"></div>
+
+    <script>
+        const testCollections = [
+            { slug: 'cryptopunks', name: 'CryptoPunks' },
+            { slug: 'bored-ape-yacht-club', name: 'Bored Ape Yacht Club' },
+            { slug: 'pudgy-penguins', name: 'Pudgy Penguins' },
+            { slug: 'autoglyphs', name: 'Autoglyphs' },
+            { slug: 'proof-moonbirds', name: 'Moonbirds' }
+        ];
+
+        const container = document.getElementById('collections');
+
+        testCollections.forEach(collection => {
+            const div = document.createElement('div');
+            div.className = 'collection';
+            
+            const img = document.createElement('img');
+            const cdnUrl = `https://s3.amazonaws.com/cdn.nftpricefloor/projects/v1/${collection.slug}.png?version=6`;
+            img.src = cdnUrl;
+            img.alt = collection.name;
+            
+            const info = document.createElement('div');
+            info.innerHTML = `<strong>${collection.name}</strong><br><small>${cdnUrl}</small><br><span id="status-${collection.slug}">Loading...</span>`;
+            
+            img.onload = () => {
+                document.getElementById(`status-${collection.slug}`).innerHTML = '<span class="success">✅ Loaded successfully</span>';
+            };
+            
+            img.onerror = () => {
+                document.getElementById(`status-${collection.slug}`).innerHTML = '<span class="error">❌ Failed to load</span>';
+                img.src = `https://api.dicebear.com/7.x/shapes/svg?seed=${collection.slug}`;
+            };
+            
+            div.appendChild(img);
+            div.appendChild(info);
+            container.appendChild(div);
+        });
+    </script>
+</body>
+</html>

@@ -1,7 +1,13 @@
 // Top NFT Collections from RapidAPI NFT Price Floor API
-// Collection images are generated using well-known NFT collection images where possible,
-// or high-quality placeholders for others
+// Collection images prioritize NFTPriceFloor CDN, with fallbacks to known high-quality images
 const generateCollectionImage = (slug) => {
+  // Priority 1: Always try NFTPriceFloor CDN first
+  // Note: Image error handling is done in the SearchBar component
+  return `https://s3.amazonaws.com/cdn.nftpricefloor/projects/v1/${slug}.png?version=6`;
+};
+
+// Legacy function for high-quality fallback images (used by image error handler)
+const generateLegacyCollectionImage = (slug) => {
   // High-quality public NFT collection images from reliable sources
   const publicImages = {
     // Top NFT Collections with official images
@@ -175,3 +181,6 @@ export const TOP_COLLECTIONS = [
   { slug: 'decent-xyz', name: 'Decent.xyz', ranking: 99, image: generateCollectionImage('decent-xyz') },
   { slug: 'highlight-xyz', name: 'Highlight.xyz', ranking: 100, image: generateCollectionImage('highlight-xyz') }
 ];
+
+// Export the legacy image generator for fallback use in components
+export { generateLegacyCollectionImage };

@@ -260,17 +260,33 @@ function App() {
             {/* Logo positioned on the left */}
             <div className="flex items-center gap-2 sm:gap-3 text-black">
               {/* Desktop logo - hidden on mobile */}
-              <img 
-                src={logoImage} 
-                alt="NFT Price Floor Logo" 
-                className="hidden sm:block h-10 lg:h-12" 
-              />
+              <a 
+                href="https://nftpricefloor.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:opacity-80 transition-opacity duration-200"
+                title="Visit NFT Price Floor"
+              >
+                <img 
+                  src={logoImage} 
+                  alt="NFT Price Floor Logo" 
+                  className="hidden sm:block h-10 lg:h-12" 
+                />
+              </a>
               {/* Mobile logo - visible only on mobile */}
-              <img 
-                src={mobileLogoImage} 
-                alt="NFT Price Floor Logo" 
-                className="block sm:hidden h-8" 
-              />
+              <a 
+                href="https://nftpricefloor.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:opacity-80 transition-opacity duration-200"
+                title="Visit NFT Price Floor"
+              >
+                <img 
+                  src={mobileLogoImage} 
+                  alt="NFT Price Floor Logo" 
+                  className="block sm:hidden h-8" 
+                />
+              </a>
             </div>
             {/* Centered navigation for desktop */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium absolute left-1/2 transform -translate-x-1/2">
@@ -477,8 +493,8 @@ function App() {
               <ul className="space-y-3">
                 <li><a href="https://nftpricefloor.com" className="text-gray-600 hover:text-black text-sm transition-colors">Rankings</a></li>
                 <li><a href="https://nftpricefloor.com/nft-drops" className="text-gray-600 hover:text-black text-sm transition-colors">NFT Drops</a></li>
-                <li><a href="https://nftpricefloor.com/nft-news" className="text-gray-600 hover:text-black text-sm transition-colors">Live News</a></li>
-                <li><a href="https://nftpricefloor.com/wallet-tracker" className="text-gray-600 hover:text-black text-sm transition-colors">Wallet Tracker</a></li>
+                <li><a href="https://strategies.nftpricefloor.com/" className="text-gray-600 hover:text-black text-sm transition-colors">Strategies</a></li>
+                <li><a href="https://compare.nftpricefloor.com/" className="text-gray-600 hover:text-black text-sm transition-colors">Compare</a></li>
               </ul>
             </div>
             
@@ -486,10 +502,10 @@ function App() {
             <div className="col-span-1">
               <h3 className="font-semibold text-black text-sm uppercase tracking-wide mb-4">More</h3>
               <ul className="space-y-3">
-                <li><a href="#" className="text-gray-600 hover:text-black text-sm transition-colors">Price Comparison</a></li>
-                <li><a href="#" className="text-gray-600 hover:text-black text-sm transition-colors">Brokerage</a></li>
-                <li><a href="#" className="text-gray-600 hover:text-black text-sm transition-colors">API</a></li>
-                <li><a href="#" className="text-gray-600 hover:text-black text-sm transition-colors">Ads</a></li>
+                <li><a href="https://nftpricefloor.com/top-nft-sales" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black text-sm transition-colors">Top NFT Sales</a></li>
+                <li><a href="https://nftpricefloor.com/brokerage" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black text-sm transition-colors">Brokerage</a></li>
+                <li><a href="https://nft-api.nftpricefloor.com/?utm=nftpricefloor.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black text-sm transition-colors">API</a></li>
+                <li><a href="https://nftpricefloor.com/nft-ads-placement" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black text-sm transition-colors">Ads</a></li>
               </ul>
             </div>
             
