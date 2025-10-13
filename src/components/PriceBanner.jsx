@@ -234,23 +234,6 @@ const PriceBanner = ({ collection1, collection2 }) => {
             from the current price.
           </div>
           
-          <div className="mt-3 pt-3 border-t border-gray-300">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-medium text-gray-700">
-              <div>
-                Current Price: <span className="font-bold text-black">{formatETH(projection.currentPrice)} ETH</span>
-              </div>
-              <div>
-                Projected Price: <span className={`font-bold ${projection.isIncrease ? 'text-green-700' : 'text-red-700'}`}>
-                  {formatETH(projection.projectedPrice)} ETH
-                </span>
-              </div>
-              <div>
-                Multiplier: <span className={`font-bold ${projection.isIncrease ? 'text-green-700' : 'text-red-700'}`}>
-                  {formatMultiplier(projection.multiplier)}
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

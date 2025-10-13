@@ -90,7 +90,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               );
             })}
           </div>
-          <div className="flex gap-4 text-right">
+          <div className="hidden md:flex gap-4 text-right">
             {collections.map((coll, index) => {
               const price = getFloorPrice(coll);
               const change = getPriceChange(coll);

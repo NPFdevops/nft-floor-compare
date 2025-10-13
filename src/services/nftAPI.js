@@ -56,8 +56,8 @@ const formatPriceData = (apiData, currency = 'ETH') => {
     return [];
   }
   
-  const { timestamps, lowestNative, lowestUsd } = apiData;
-  const priceArray = currency === 'USD' ? lowestUsd : lowestNative;
+  const { timestamps, floorNative, floorUsd } = apiData;
+  const priceArray = currency === 'USD' ? floorUsd : floorNative;
   
   if (!priceArray) {
     console.log(`formatPriceData: ${currency} price data not available:`, apiData);
@@ -260,8 +260,8 @@ async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
       rawData: {
         dataPoints: data,
         timestamps: data.timestamps,
-        floorEth: data.lowestNative,
-        floorUsd: data.lowestUsd
+        floorEth: data.floorNative,
+        floorUsd: data.floorUsd
       }
     };
     
