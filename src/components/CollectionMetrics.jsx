@@ -92,72 +92,54 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
     }
   };
 
+  const formatWholeNumber = (num) => {
+    if (!num || isNaN(num)) return 'N/A';
+    
+    const number = parseFloat(num);
+    return number.toLocaleString();
+  };
+
   const formatPercentage = (num) => {
     if (!num || isNaN(num)) return 'N/A';
     return `${(parseFloat(num) * 100).toFixed(1)}%`;
   };
 
-  const MetricCard = ({ title, value1, value2, loading1, loading2, error1, error2, icon }) => (
-    <div className="bg-white border-2 border-black rounded-none">
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-3">
+  const MetricRow = ({ title, value1, value2, loading1, loading2, error1, error2, icon }) => (
+    <div className="grid grid-cols-3 border-b-2 border-black last:border-b-0">
+      {/* Metric Name Column */}
+      <div className="p-4 border-r-2 border-black bg-gray-50">
+        <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-lg text-black">{icon}</span>
           <h3 className="text-sm font-bold text-black uppercase tracking-wide">{title}</h3>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Collection 1 */}
-          <div className="flex flex-col">
-            <div className="text-xs font-medium mb-1 truncate">
-              {collection1?.name ? (
-                <span 
-                  className="font-bold px-2 py-1 rounded text-white text-xs"
-                  style={{ backgroundColor: chartColors.collection1 }}
-                >
-                  {collection1.name}
-                </span>
-              ) : (
-                <span className="text-gray-600">Collection 1</span>
-              )}
-            </div>
-            {loading1 ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
-                <span className="text-sm text-gray-500">Loading...</span>
-              </div>
-            ) : error1 ? (
-              <span className="text-sm text-red-600 font-medium">Error</span>
-            ) : (
-              <span className="text-lg font-bold text-black">{value1}</span>
-            )}
+      </div>
+      
+      {/* Collection 1 Column */}
+      <div className="p-4 border-r-2 border-black">
+        {loading1 ? (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+            <span className="text-sm text-gray-500">Loading...</span>
           </div>
-          
-          {/* Collection 2 */}
-          <div className="flex flex-col">
-            <div className="text-xs font-medium mb-1 truncate">
-              {collection2?.name ? (
-                <span 
-                  className="font-bold px-2 py-1 rounded text-white text-xs"
-                  style={{ backgroundColor: chartColors.collection2 }}
-                >
-                  {collection2.name}
-                </span>
-              ) : (
-                <span className="text-gray-600">Collection 2</span>
-              )}
-            </div>
-            {loading2 ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
-                <span className="text-sm text-gray-500">Loading...</span>
-              </div>
-            ) : error2 ? (
-              <span className="text-sm text-red-600 font-medium">Error</span>
-            ) : (
-              <span className="text-lg font-bold text-black">{value2}</span>
-            )}
+        ) : error1 ? (
+          <span className="text-sm text-red-600 font-medium">Error</span>
+        ) : (
+          <span className="text-lg font-bold text-black">{value1}</span>
+        )}
+      </div>
+      
+      {/* Collection 2 Column */}
+      <div className="p-4">
+        {loading2 ? (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+            <span className="text-sm text-gray-500">Loading...</span>
           </div>
-        </div>
+        ) : error2 ? (
+          <span className="text-sm text-red-600 font-medium">Error</span>
+        ) : (
+          <span className="text-lg font-bold text-black">{value2}</span>
+        )}
       </div>
     </div>
   );
@@ -174,22 +156,59 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
         <p className="text-sm text-gray-600">Compare key statistics between collections</p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <MetricCard
-          title="Market Cap"
-          value1={formatNumber(metrics.collection1?.marketCap)}
-          value2={formatNumber(metrics.collection2?.marketCap)}
+      {/* Table-style comparison */}
+      <div className="bg-white border-2 border-black rounded-none">
+        {/* Header Row */}
+        <div className="grid grid-cols-3 border-b-2 border-black bg-gray-100">
+          <div className="p-4 border-r-2 border-black">
+            <h3 className="text-sm font-bold text-black uppercase tracking-wide">Metric</h3>
+          </div>
+          <div className="p-4 border-r-2 border-black">
+            <div className="text-xs font-medium truncate">
+              {collection1?.name ? (
+                <span 
+                  className="font-bold px-2 py-1 rounded-none text-white text-xs border border-black"
+                  style={{ backgroundColor: chartColors.collection1 }}
+                >
+                  {collection1.name}
+                </span>
+              ) : (
+                <span className="text-gray-600 font-bold">Collection 1</span>
+              )}
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="text-xs font-medium truncate">
+              {collection2?.name ? (
+                <span 
+                  className="font-bold px-2 py-1 rounded-none text-white text-xs border border-black"
+                  style={{ backgroundColor: chartColors.collection2 }}
+                >
+                  {collection2.name}
+                </span>
+              ) : (
+                <span className="text-gray-600 font-bold">Collection 2</span>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Metric Rows */}
+        <MetricRow
+          title="Unique Owners"
+          value1={formatWholeNumber(metrics.collection1?.owners)}
+          value2={formatWholeNumber(metrics.collection2?.owners)}
           loading1={loading.collection1}
           loading2={loading.collection2}
           error1={error.collection1}
           error2={error.collection2}
-          icon="trending_up"
+          icon="groups"
         />
         
-        <MetricCard
+        <MetricRow
           title="Total Supply"
-          value1={formatCount(metrics.collection1?.totalSupply)}
-          value2={formatCount(metrics.collection2?.totalSupply)}
+          value1={formatWholeNumber(metrics.collection1?.totalSupply)}
+          value2={formatWholeNumber(metrics.collection2?.totalSupply)}
           loading1={loading.collection1}
           loading2={loading.collection2}
           error1={error.collection1}
@@ -197,7 +216,7 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
           icon="inventory_2"
         />
         
-        <MetricCard
+        <MetricRow
           title="Listed Items"
           value1={formatCount(metrics.collection1?.listedItems)}
           value2={formatCount(metrics.collection2?.listedItems)}
@@ -208,15 +227,15 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
           icon="list"
         />
         
-        <MetricCard
-          title="Unique Owners"
-          value1={formatCount(metrics.collection1?.owners)}
-          value2={formatCount(metrics.collection2?.owners)}
+        <MetricRow
+          title="Market Cap"
+          value1={formatNumber(metrics.collection1?.marketCap)}
+          value2={formatNumber(metrics.collection2?.marketCap)}
           loading1={loading.collection1}
           loading2={loading.collection2}
           error1={error.collection1}
           error2={error.collection2}
-          icon="groups"
+          icon="trending_up"
         />
       </div>
     </div>
