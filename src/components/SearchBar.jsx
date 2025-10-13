@@ -204,6 +204,7 @@ const SearchBar = ({
                 </div>
                 );
               })
+            )}
           </div>
         </div>
       )}
