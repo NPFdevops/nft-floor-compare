@@ -1,12 +1,13 @@
-import posthog from 'posthog-js';
-
 class PostHogService {
   constructor() {
     this.isInitialized = false;
+    this.posthog = null;
+    this.initPromise = null;
   }
 
-  init() {
+  async init() {
     if (this.isInitialized) return;
+    if (this.initPromise) return this.initPromise;
 
     const posthogKey = import.meta.env.VITE_POSTHOG_KEY;
     const posthogHost = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
@@ -16,42 +17,56 @@ class PostHogService {
       return;
     }
 
-    try {
-      posthog.init(posthogKey, {
-        api_host: posthogHost,
-        person_profiles: 'identified_only',
-        capture_pageview: true,
-        capture_pageleave: true,
-        loaded: (posthog) => {
-          if (import.meta.env.DEV) {
-            console.log('PostHog loaded successfully');
+    this.initPromise = (async () => {
+      try {
+        // Lazy load posthog to reduce initial bundle size
+        const { default: posthog } = await import('posthog-js');
+        this.posthog = posthog;
+        
+        posthog.init(posthogKey, {
+          api_host: posthogHost,
+          person_profiles: 'identified_only',
+          capture_pageview: true,
+          capture_pageleave: true,
+          loaded: (posthog) => {
+            if (import.meta.env.DEV) {
+              console.log('PostHog loaded successfully');
+            }
           }
-        }
-      });
+        });
 
-      this.isInitialized = true;
-    } catch (error) {
-      console.error('Failed to initialize PostHog:', error);
-    }
+        this.isInitialized = true;
+      } catch (error) {
+        console.error('Failed to initialize PostHog:', error);
+      }
+    })();
+    
+    return this.initPromise;
   }
 
   // Track custom events
-  track(eventName, properties = {}) {
-    if (!this.isInitialized) return;
+  async track(eventName, properties = {}) {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+    if (!this.posthog) return;
     
     try {
-      posthog.capture(eventName, properties);
+      this.posthog.capture(eventName, properties);
     } catch (error) {
       console.error('Failed to track event:', error);
     }
   }
 
   // Track page views manually if needed
-  trackPageView(pageName, properties = {}) {
-    if (!this.isInitialized) return;
+  async trackPageView(pageName, properties = {}) {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+    if (!this.posthog) return;
     
     try {
-      posthog.capture('$pageview', {
+      this.posthog.capture('$pageview', {
         $current_url: window.location.href,
         page_name: pageName,
         ...properties
@@ -62,33 +77,40 @@ class PostHogService {
   }
 
   // Identify users (for when you have user authentication)
-  identify(userId, properties = {}) {
-    if (!this.isInitialized) return;
+  async identify(userId, properties = {}) {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+    if (!this.posthog) return;
     
     try {
-      posthog.identify(userId, properties);
+      this.posthog.identify(userId, properties);
     } catch (error) {
       console.error('Failed to identify user:', error);
     }
   }
 
   // Set user properties
-  setPersonProperties(properties) {
-    if (!this.isInitialized) return;
+  async setPersonProperties(properties) {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+    if (!this.posthog) return;
     
     try {
-      posthog.setPersonProperties(properties);
+      this.posthog.setPersonProperties(properties);
     } catch (error) {
       console.error('Failed to set person properties:', error);
     }
   }
 
   // Reset user (for logout)
-  reset() {
+  async reset() {
     if (!this.isInitialized) return;
+    if (!this.posthog) return;
     
     try {
-      posthog.reset();
+      this.posthog.reset();
     } catch (error) {
       console.error('Failed to reset PostHog:', error);
     }
@@ -96,7 +118,7 @@ class PostHogService {
 
   // Get the PostHog instance for advanced usage
   getInstance() {
-    return this.isInitialized ? posthog : null;
+    return this.posthog;
   }
 }
 

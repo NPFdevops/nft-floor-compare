@@ -5,8 +5,8 @@ import App from './App.jsx'
 import './index.css'
 import { posthogService } from './services/posthogService.js'
 
-// Initialize PostHog
-posthogService.init();
+// Lazy initialize PostHog after app loads
+setTimeout(() => posthogService.init(), 0);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>

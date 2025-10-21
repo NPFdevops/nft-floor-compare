@@ -7,6 +7,7 @@ import CacheStats from './components/CacheStats';
 import CollectionMetrics from './components/CollectionMetrics';
 import PriceBanner from './components/PriceBanner';
 import CurrencySwitch from './components/CurrencySwitch';
+import ComparisonExamples from './components/ComparisonExamples';
 import { fetchFloorPriceHistory } from './services/nftAPI';
 import { parseUrlParams, createUrlParams } from './utils/urlUtils';
 import { collectionsService } from './services/collectionsService';
@@ -251,6 +252,22 @@ function App() {
     console.log('📊 Charts will automatically update with reformatted data');
   };
 
+  // Handle comparison example selection
+  const handleComparisonSelect = (slug1, slug2) => {
+    console.log('🎯 Quick comparison selected:', { slug1, slug2 });
+    
+    // Load both collections
+    handleCollectionSearch(slug1, 1);
+    handleCollectionSearch(slug2, 2);
+    
+    // Track analytics
+    posthogService.track('quick_comparison_selected', {
+      collection1_slug: slug1,
+      collection2_slug: slug2,
+      is_mobile: isMobile
+    });
+  };
+
   return (
     <div className="relative flex size-full min-h-screen flex-col" style={{fontFamily: '"Space Grotesk", sans-serif', backgroundColor: '#FFF6FB'}}>
       <div className="layout-container flex h-full grow flex-col">
@@ -325,11 +342,17 @@ function App() {
               </h1>
             </div>
             
+            {/* Comparison Examples */}
+            <ComparisonExamples 
+              onSelectComparison={handleComparisonSelect}
+              isMobile={isMobile}
+            />
+            
             {/* Search Controls */}
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 pb-6">
               <div className="w-full md:flex-1">
                 <SearchBar 
-                  placeholder="Search for a collection"
+                  placeholder="Search for a collection A"
                   onSearch={(slug) => handleCollectionSearch(slug, 1)}
                   onClear={() => clearCollection(1)}
                   loading={loading.collection1}
@@ -361,7 +384,7 @@ function App() {
               
               <div className="w-full md:flex-1">
                 <SearchBar 
-                  placeholder="Search for a collection"
+                  placeholder="Search for a collection B"
                   onSearch={(slug) => handleCollectionSearch(slug, 2)}
                   onClear={() => clearCollection(2)}
                   loading={loading.collection2}
@@ -510,7 +533,7 @@ function App() {
             </div>
             
             {/* Newsletter */}
-            <div className="col-span-1">
+            <div className="col-span-1 hidden">
               <h3 className="font-semibold text-black text-sm uppercase tracking-wide mb-4">Stay Updated</h3>
               <p className="text-gray-600 text-sm mb-4">Get the latest NFT market insights delivered to your inbox.</p>
               <div className="flex flex-col space-y-2">

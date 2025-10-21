@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import html2canvas from 'html2canvas';
 import { createShareableUrl, generateShareTitle } from '../utils/urlUtils';
 
 const MobileScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout }) => {
@@ -26,6 +25,9 @@ const MobileScreenshotShare = ({ targetId, collection1, collection2, timeframe, 
     }
 
     try {
+      // Lazy load html2canvas only when needed
+      const html2canvas = (await import('html2canvas')).default;
+      
       const canvas = await html2canvas(targetElement, {
         backgroundColor: '#ffffff',
         scale: window.devicePixelRatio || 2, // Use device pixel ratio for better quality
