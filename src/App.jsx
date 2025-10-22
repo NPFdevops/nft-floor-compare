@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { usePostHog } from 'posthog-js/react';
 import SearchBar from './components/SearchBar';
 import ChartDisplay from './components/ChartDisplay';
 import ScreenshotShare from './components/ScreenshotShare';
@@ -12,7 +13,6 @@ import SettingsModal from './components/SettingsModal';
 import { fetchFloorPriceHistory } from './services/nftAPI';
 import { parseUrlParams, createUrlParams } from './utils/urlUtils';
 import { collectionsService } from './services/collectionsService';
-import { posthogService } from './services/posthogService';
 import { useTheme } from './contexts/ThemeContext';
 import logoLightImage from './assets/NFTPriceFloor_logo_light.png';
 import logoDarkImage from './assets/NFTPriceFloor_logo_dark.png';
@@ -21,6 +21,7 @@ import mobileLogoImage from './assets/nftpf_logo_mobile.png';
 function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
+  const posthog = usePostHog();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Parse initial state from URL parameters - memoize to prevent re-creation
@@ -156,7 +157,7 @@ function App() {
         console.log('✅ Successfully updated collection', collectionNumber, properCollectionName);
         
         // Track collection search analytics
-        posthogService.track('collection_searched', {
+        posthog?.capture('collection_searched', {
           collection_slug: collectionSlug,
           collection_number: collectionNumber,
           layout: layout
@@ -207,7 +208,7 @@ function App() {
     }));
     
     // Track analytics
-    posthogService.track('collections_swapped', {
+    posthog?.capture('collections_swapped', {
       from_collection: collection1?.slug,
       to_collection: collection2?.slug,
       layout: layout
@@ -225,7 +226,7 @@ function App() {
     console.log('📏 Layout changed to:', newLayout);
     
     // Track layout change analytics
-    posthogService.track('layout_changed', {
+    posthog?.capture('layout_changed', {
       previous_layout: layout,
       new_layout: newLayout,
       has_collection1: !!collection1,
@@ -246,7 +247,7 @@ function App() {
     setCurrency(newCurrency);
     
     // Track currency change analytics
-    posthogService.track('currency_changed', {
+    posthog?.capture('currency_changed', {
       previous_currency: currency,
       new_currency: newCurrency,
       has_collection1: !!collection1,
@@ -266,7 +267,7 @@ function App() {
     handleCollectionSearch(slug2, 2);
     
     // Track analytics
-    posthogService.track('quick_comparison_selected', {
+    posthog?.capture('quick_comparison_selected', {
       collection1_slug: slug1,
       collection2_slug: slug2,
       is_mobile: isMobile
@@ -294,23 +295,23 @@ function App() {
               
               {/* Desktop navigation - Centered */}
               <nav className="hidden md:flex items-center gap-3 lg:gap-6 text-sm font-medium flex-1 justify-center">
-                <a href="https://nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-gray-400' : 'text-gray-600'} hover:text-[#DD5994] transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2`}>
+                <a href="https://nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-gray-500' : 'text-gray-500'} hover:text-[#DD5994] transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2`}>
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M2 20h6v-6H2v6zm8-10h6v10h-6V10zm8 4h6v6h-6v-6z"/>
                     <path d="M2 19h6v1H2v-1zm8 1h6v-1h-6v1zm8-3h6v1h-6v-1z"/>
                   </svg>
                   Rankings
                 </a>
-                <a href="https://nftpricefloor.com/nft-drops" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-gray-400' : 'text-gray-600'} hover:text-[#DD5994] transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2`}>
+                <a href="https://nftpricefloor.com/nft-drops" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-gray-500' : 'text-gray-500'} hover:text-[#DD5994] transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-2`}>
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2L8.5 8.5L2 12l6.5 3.5L12 22l3.5-6.5L22 12l-6.5-3.5L12 2zm0 3.83L14.17 12L12 18.17L9.83 12L12 5.83z"/>
                   </svg>
                   Drops
                 </a>
-                <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-gray-400' : 'text-gray-600'} hover:text-[#DD5994] transition-colors whitespace-nowrap flex-shrink-0`}>
+                <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`${isDark ? 'text-gray-500' : 'text-gray-500'} hover:text-[#DD5994] transition-colors whitespace-nowrap flex-shrink-0`}>
                   Strategies™
                 </a>
-                <span className="text-[#DD5994] font-medium whitespace-nowrap flex-shrink-0 flex items-center gap-1.5">
+                <span className="text-[#DD5994] font-bold whitespace-nowrap flex-shrink-0 flex items-center gap-1.5">
                   Compare
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-none border border-white" style={{backgroundColor: 'var(--accent-color)', color: '#fff'}}>
                     New!
@@ -474,20 +475,20 @@ function App() {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t-2 border-solid px-4 py-3 z-[1000000]" style={{ backgroundColor: isDark ? 'var(--surface)' : '#FFFFFF', borderColor: 'var(--border)', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex items-center justify-around gap-2">
-          <a href="https://nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-1 ${isDark ? 'text-gray-400' : 'text-gray-600'} hover:text-[#DD5994] transition-colors min-w-0`}>
+          <a href="https://nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-1 ${isDark ? 'text-gray-500' : 'text-gray-500'} hover:text-[#DD5994] transition-colors min-w-0`}>
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M2 20h6v-6H2v6zm8-10h6v10h-6V10zm8 4h6v6h-6v-6z"/>
               <path d="M2 19h6v1H2v-1zm8 1h6v-1h-6v1zm8-3h6v1h-6v-1z"/>
             </svg>
             <span className="text-xs font-medium truncate">Rankings</span>
           </a>
-          <a href="https://nftpricefloor.com/nft-drops" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-1 ${isDark ? 'text-gray-400' : 'text-gray-600'} hover:text-[#DD5994] transition-colors min-w-0`}>
+          <a href="https://nftpricefloor.com/nft-drops" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-1 ${isDark ? 'text-gray-500' : 'text-gray-500'} hover:text-[#DD5994] transition-colors min-w-0`}>
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L8.5 8.5L2 12l6.5 3.5L12 22l3.5-6.5L22 12l-6.5-3.5L12 2zm0 3.83L14.17 12L12 18.17L9.83 12L12 5.83z"/>
             </svg>
             <span className="text-xs font-medium truncate">Drops</span>
           </a>
-          <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-1 ${isDark ? 'text-gray-400' : 'text-gray-600'} hover:text-[#DD5994] transition-colors min-w-0`}>
+          <a href="https://strategies.nftpricefloor.com" target="_blank" rel="noopener noreferrer" className={`flex flex-col items-center gap-1 ${isDark ? 'text-gray-500' : 'text-gray-500'} hover:text-[#DD5994] transition-colors min-w-0`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
@@ -502,7 +503,7 @@ function App() {
                 New!
               </span>
             </div>
-            <span className="text-xs font-medium truncate">Compare</span>
+            <span className="text-xs font-bold truncate">Compare</span>
           </div>
         </div>
       </nav>

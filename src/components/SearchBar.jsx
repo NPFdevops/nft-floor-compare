@@ -127,8 +127,10 @@ const SearchBar = ({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <form onSubmit={handleSubmit} className="relative">
-        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-xl" style={{ color: 'var(--text-primary)' }}>search</span>
+      <form onSubmit={handleSubmit} className="relative overflow-hidden">
+        <div className="absolute left-3 inset-y-0 pointer-events-none flex items-center justify-center" style={{ width: '24px' }}>
+          <span className="material-symbols-outlined text-xl" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>search</span>
+        </div>
         <input 
           ref={inputRef}
           type="text"
@@ -136,8 +138,10 @@ const SearchBar = ({
           onChange={handleInputChange}
           onClick={handleInputClick}
           placeholder={placeholder}
-          className="form-input w-full rounded-none focus:outline-0 focus:ring-2 focus:ring-[var(--accent-color)] border-2 h-14 px-12 text-base font-medium leading-normal"
+          className="form-input w-full rounded-none focus:outline-0 focus:ring-2 focus:ring-[var(--accent-color)] border-2 h-14 text-base font-medium leading-none"
           style={{
+            paddingLeft: '44px',
+            paddingRight: '44px',
             color: 'var(--text-primary)',
             backgroundColor: 'var(--surface)',
             borderColor: error ? '#ef4444' : 'var(--border)',
@@ -149,8 +153,8 @@ const SearchBar = ({
         />
         
         {(loading || collectionsState.isLoading) && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: 'var(--border)', borderTopColor: 'transparent' }}></div>
+          <div className="absolute right-3 inset-y-0 flex items-center justify-center" style={{ width: '24px' }}>
+            <div className="animate-spin border-2 border-t-transparent rounded-full" style={{ width: '16px', height: '16px', borderColor: 'var(--border)', borderTopColor: 'transparent' }}></div>
           </div>
         )}
         
@@ -158,11 +162,11 @@ const SearchBar = ({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
+            className="absolute right-3 inset-y-0 transition-colors flex items-center justify-center"
+            style={{ color: 'var(--text-secondary)', width: '24px' }}
             aria-label="Clear search"
           >
-            <span className="material-symbols-outlined text-base">close</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
           </button>
         )}
       </form>

@@ -10,6 +10,15 @@ export default defineConfig({
     },
     watch: {
       ignored: ['**/node_modules/**', '**/data/**', '**/.git/**']
+    },
+    // PostHog reverse proxy to bypass ad blockers
+    proxy: {
+      '/ingest': {
+        target: 'https://us.i.posthog.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/ingest/, '')
+      }
     }
   },
   optimizeDeps: {

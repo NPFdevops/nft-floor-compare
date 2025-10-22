@@ -126,7 +126,7 @@ const PriceBanner = ({ collection1, collection2 }) => {
     return (
       <div className="price-banner bg-gray-50 dark:bg-[#1a1a1a] border-2 border-gray-300 dark:border-gray-600 rounded-none p-4 mb-6 shadow-[4px_4px_0px_#000000] dark:shadow-[4px_4px_0px_#404040]">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 p-2 rounded-none border-2 bg-gray-400 dark:bg-gray-700 border-gray-500 dark:border-gray-600">
+          <div className="flex-shrink-0 p-2 rounded-none border-2 bg-white dark:bg-gray-700 border-gray-500 dark:border-gray-600">
             <div className="animate-spin h-5 w-5 border-2 border-white dark:border-gray-300 border-t-transparent rounded-full"></div>
           </div>
           <div className="flex-1">
@@ -143,7 +143,7 @@ const PriceBanner = ({ collection1, collection2 }) => {
               </span>{' '}
               with the market cap of{' '}
               <span 
-                className="font-bold px-2 py-0.5 rounded text-white text-sm"
+                className="font-bold px-2 py-0.5 rounded text-black text-sm"
                 style={{ backgroundColor: chartColors.collection2 }}
               >
                 {collection2.name}
@@ -185,14 +185,14 @@ const PriceBanner = ({ collection1, collection2 }) => {
   return (
     <div className={`price-banner bg-gradient-to-r ${
       projection.isIncrease 
-        ? 'from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-green-500 dark:border-green-700' 
-        : 'from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-red-500 dark:border-red-700'
+        ? 'from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/40 border-green-500 dark:border-green-700' 
+        : 'from-red-50 to-red-100 dark:from-red-950/40 dark:to-red-900/40 border-red-500 dark:border-red-700'
     } border-2 rounded-none p-4 mb-6 shadow-[4px_4px_0px_#000000] dark:shadow-[4px_4px_0px_#404040]`}>
       <div className="flex items-start gap-3">
         <div className={`flex-shrink-0 p-2 rounded-none border-2 ${
           projection.isIncrease 
             ? 'bg-green-500 dark:bg-green-700 border-green-600 dark:border-green-800' 
-            : 'bg-red-500 dark:bg-red-700 border-red-600 dark:border-red-800'
+            : 'bg-red-200 dark:bg-red-700 border-red-600 dark:border-red-800'
         }`}>
           <span className="material-symbols-outlined text-white text-xl">
             {projection.isIncrease ? 'trending_up' : 'trending_down'}
@@ -204,7 +204,7 @@ const PriceBanner = ({ collection1, collection2 }) => {
             Price Projection
           </div>
           
-          <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+          <div className="text-sm text-black dark:text-gray-200 leading-relaxed">
             The price of{' '}
             <span 
               className="font-bold px-2 py-0.5 rounded text-white text-sm"
@@ -218,7 +218,7 @@ const PriceBanner = ({ collection1, collection2 }) => {
             }`}>
               {formatETH(projection.projectedPrice)} ETH
             </span>{' '}
-            with the market cap of{' '}
+            if it had the market cap of{' '}
             <span 
               className="font-bold px-2 py-0.5 rounded text-white text-sm"
               style={{ backgroundColor: chartColors.collection2 }}

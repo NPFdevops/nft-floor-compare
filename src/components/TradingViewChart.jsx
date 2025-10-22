@@ -103,22 +103,44 @@ const TradingViewChart = ({
           borderVisible: false,
           timeVisible: true,
           secondsVisible: false,
-          // Disable interaction to keep chart static
-          rightBarStaysOnScroll: true,
-          lockVisibleTimeRangeOnResize: true,
+          rightBarStaysOnScroll: false,
+          lockVisibleTimeRangeOnResize: false,
+          rightOffset: 5,
+          barSpacing: 6,
         },
-        // Disable interactions to make chart static
+        // Enable interactive features: zoom, pan, and drag
         handleScroll: {
-          mouseWheel: false,
-          pressedMouseMove: false,
-          horzTouchDrag: false,
-          vertTouchDrag: false,
+          mouseWheel: true,
+          pressedMouseMove: true,
+          horzTouchDrag: true,
+          vertTouchDrag: true,
         },
         handleScale: {
-          mouseWheel: false,
-          pinch: false,
-          axisPressedMouseMove: false,
-          axisDoubleClickReset: false,
+          mouseWheel: true,
+          pinch: true,
+          axisPressedMouseMove: {
+            time: true,
+            price: true,
+          },
+          axisDoubleClickReset: {
+            time: true,
+            price: true,
+          },
+        },
+        crosshair: {
+          mode: 1, // Normal crosshair mode
+          vertLine: {
+            width: 1,
+            color: isDarkMode ? '#666666' : '#999999',
+            style: 3, // Dashed line
+            labelBackgroundColor: isDarkMode ? '#333333' : '#cccccc',
+          },
+          horzLine: {
+            width: 1,
+            color: isDarkMode ? '#666666' : '#999999',
+            style: 3, // Dashed line
+            labelBackgroundColor: isDarkMode ? '#333333' : '#cccccc',
+          },
         },
         watermark: {
           visible: false, // Disable text watermark since we'll use image overlay

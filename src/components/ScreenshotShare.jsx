@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { createShareableUrl, generateShareTitle } from '../utils/urlUtils';
-import { posthogService } from '../services/posthogService';
 import './TradingViewChart.css';
 
 const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout }) => {
+  const posthog = usePostHog();
   const [isCapturing, setIsCapturing] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
 
@@ -12,7 +13,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     
     if (!targetElement) {
       // Track failed screenshot attempt
-      posthogService.track('screenshot_failed', {
+      posthog?.capture('screenshot_failed', {
         reason: 'no_target_element',
         target_id: targetId,
         has_collection1: !!collection1,
@@ -30,7 +31,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     }
 
     // Track screenshot attempt
-    posthogService.track('screenshot_started', {
+    posthog?.capture('screenshot_started', {
       target_id: targetId,
       collection1_slug: collection1?.slug,
       collection2_slug: collection2?.slug,
@@ -75,7 +76,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
         document.body.removeChild(link);
         
         // Track successful screenshot
-        posthogService.track('screenshot_completed', {
+        posthog?.capture('screenshot_completed', {
           filename: filename,
           collection1_slug: collection1?.slug,
           collection2_slug: collection2?.slug,
@@ -105,7 +106,7 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     const shareText = `${shareTitle} - View interactive comparison`;
     
     // Track URL sharing attempt
-    posthogService.track('url_share_started', {
+    posthog?.capture('url_share_started', {
       collection1_slug: collection1?.slug,
       collection2_slug: collection2?.slug,
       timeframe: timeframe,
