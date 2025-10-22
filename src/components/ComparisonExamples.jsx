@@ -88,7 +88,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
             <button
               key={index}
               onClick={() => handleClick(example, index)}
-              className="group relative border-2 rounded-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-3"
+              className="group relative border-2 rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-3"
               style={{
                 borderColor: 'var(--border)',
                 backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
@@ -108,7 +108,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
                 </div>
                 
                 {/* VS Text */}
-                <span className={`text-xs font-bold ${
+                <span className={`text-xs font-bold hover:scale-105 transition-transform duration-200 ${
                   activeExample === index ? 'text-white bg-black px-2 py-1' : 'text-white bg-[#E3579A] px-2 py-1'
                 }`}>VS</span>
                 
@@ -138,7 +138,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
             <button
             key={index}
             onClick={() => handleClick(example, index)}
-            className="group relative border-2 rounded-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4"
+            className="group relative border-2 rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4"
             style={{
               borderColor: 'var(--border)',
               backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
@@ -166,7 +166,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
                 </div>
                 
                 {/* VS Badge */}
-                <div className={`flex-shrink-0 text-white px-2 py-1 text-[10px] font-bold ${
+                <div className={`flex-shrink-0 text-white px-2 py-1 text-[10px] font-bold hover:scale-105 transition-transform duration-200 ${
                   activeExample === index ? 'bg-black' : 'bg-[#E3579A]'
                 }`}>
                   VS
