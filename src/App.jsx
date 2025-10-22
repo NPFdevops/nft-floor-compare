@@ -390,8 +390,8 @@ function App() {
                   <button
                     onClick={handleSwapCollections}
                     className="flex items-center gap-2 px-4 py-2 border-2 rounded-none text-sm font-bold text-white hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)]"
-                    style={{ borderColor: 'var(--border)' }}
                     style={{ 
+                      borderColor: 'var(--border)',
                       backgroundColor: '#E3579A',
                       transition: 'background-color 0.2s ease, transform 0.2s ease'
                     }}
