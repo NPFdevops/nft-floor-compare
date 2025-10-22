@@ -31,7 +31,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
     >
       <div className={`max-w-md w-full mx-4 overflow-hidden rounded-none border-2 transition-all duration-200 max-h-[90vh] overflow-y-auto ${
         actualTheme === 'dark' 
-          ? 'bg-gray-900 border-white' 
+          ? 'bg-[#1a1a1a] border-white' 
           : 'bg-white border-black'
       }`} style={{fontFamily: '"Space Grotesk", sans-serif'}}>
         {/* Header */}
@@ -45,7 +45,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
             onClick={handleClose}
             className={`w-10 h-10 flex items-center justify-center rounded-none border-2 transition-all duration-200 hover:scale-105 ${
               actualTheme === 'dark'
-                ? 'bg-gray-900 border-white text-white hover:bg-[var(--accent-color)] hover:text-black'
+                ? 'bg-[#1a1a1a] border-white text-white hover:bg-[var(--accent-color)] hover:text-black'
                 : 'bg-white border-black text-black hover:bg-[var(--accent-color)]'
             }`}
             aria-label="Close settings"
@@ -74,7 +74,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       ? 'border-white bg-[var(--accent-color)] text-black'
                       : 'border-black bg-[var(--accent-color)] text-black'
                     : actualTheme === 'dark' 
-                      ? 'border-gray-700 hover:border-white bg-gray-800/50' 
+                      ? 'border-gray-700 hover:border-white bg-[#1a1a1a]' 
                       : 'border-gray-300 hover:border-black bg-white'
                 }`}>
                   <div className="flex items-center space-x-3 flex-1">
@@ -133,7 +133,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       ? 'border-white bg-[var(--accent-color)] text-black'
                       : 'border-black bg-[var(--accent-color)] text-black'
                     : actualTheme === 'dark' 
-                      ? 'border-gray-700 hover:border-white bg-gray-800/50' 
+                      ? 'border-gray-700 hover:border-white bg-[#1a1a1a]' 
                       : 'border-gray-300 hover:border-black bg-white'
                 }`}>
                   <div className="flex items-center space-x-3 flex-1">
@@ -192,7 +192,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       ? 'border-white bg-[var(--accent-color)] text-black'
                       : 'border-black bg-[var(--accent-color)] text-black'
                     : actualTheme === 'dark' 
-                      ? 'border-gray-700 hover:border-white bg-gray-800/50' 
+                      ? 'border-gray-700 hover:border-white bg-[#1a1a1a]' 
                       : 'border-gray-300 hover:border-black bg-white'
                 }`}>
                   <div className="flex items-center space-x-3 flex-1">
