@@ -88,14 +88,16 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
             <button
               key={index}
               onClick={() => handleClick(example, index)}
-              className={`group relative border-2 border-black rounded-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-3 ${
-                activeExample === index ? 'bg-[#E3579A]' : 'bg-white'
-              }`}
+              className="group relative border-2 rounded-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-3"
+              style={{
+                borderColor: 'var(--border)',
+                backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
+              }}
               title={`${example.collection1.name} vs ${example.collection2.name}`}
             >
               <div className="flex items-center justify-center gap-2">
                 {/* Collection 1 Image */}
-                <div className="w-12 h-12 border-2 border-black overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="w-12 h-12 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
                   <img 
                     src={example.collection1.image} 
                     alt={example.collection1.name}
@@ -111,7 +113,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
                 }`}>VS</span>
                 
                 {/* Collection 2 Image */}
-                <div className="w-12 h-12 border-2 border-black overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="w-12 h-12 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
                   <img 
                     src={example.collection2.image} 
                     alt={example.collection2.name}
@@ -133,18 +135,20 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
     <div className="mb-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {examples.map((example, index) => (
-          <button
+            <button
             key={index}
             onClick={() => handleClick(example, index)}
-            className={`group relative border-2 border-black rounded-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4 ${
-              activeExample === index ? 'bg-[#E3579A]' : 'bg-white'
-            }`}
+            className="group relative border-2 rounded-none hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4"
+            style={{
+              borderColor: 'var(--border)',
+              backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
+            }}
           >
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2">
                 {/* Collection 1 */}
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-10 h-10 border-2 border-black overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
                     <img 
                       src={example.collection1.image} 
                       alt={example.collection1.name}
@@ -153,9 +157,10 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
                       onError={(e) => handleImageError(e, example.collection1.slug)}
                     />
                   </div>
-                  <span className={`text-xs font-medium truncate ${
-                    activeExample === index ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <span 
+                    className="text-xs font-medium truncate"
+                    style={{ color: activeExample === index ? 'white' : 'var(--text-primary)' }}
+                  >
                     {example.collection1.name}
                   </span>
                 </div>
@@ -169,7 +174,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
                 
                 {/* Collection 2 */}
                 <div className="flex items-center gap-2 flex-1 min-w-0 flex-row-reverse">
-                  <div className="w-10 h-10 border-2 border-black overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
                     <img 
                       src={example.collection2.image} 
                       alt={example.collection2.name}
@@ -178,9 +183,10 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
                       onError={(e) => handleImageError(e, example.collection2.slug)}
                     />
                   </div>
-                  <span className={`text-xs font-medium truncate text-right ${
-                    activeExample === index ? 'text-white' : 'text-gray-900'
-                  }`}>
+                  <span 
+                    className="text-xs font-medium truncate text-right"
+                    style={{ color: activeExample === index ? 'white' : 'var(--text-primary)' }}
+                  >
                     {example.collection2.name}
                   </span>
                 </div>

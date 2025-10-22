@@ -8,8 +8,12 @@ import { posthogService } from './services/posthogService.js'
 // Lazy initialize PostHog after app loads
 setTimeout(() => posthogService.init(), 0);
 
+import { ThemeProvider } from './contexts/ThemeContext.jsx'
+
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>,
+  <ThemeProvider>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </ThemeProvider>,
 )

@@ -23,17 +23,18 @@ const TimeframeSelector = ({ timeframe, onTimeframeChange }) => {
       {/* Mobile-first design - matching brutalist UI style */}
       <div className="block sm:hidden">
         <div className="flex flex-col gap-2 mb-4">
-          <p className="text-sm font-bold text-black">Timeframe:</p>
-          <div className="flex h-12 items-center rounded-none border-2 border-black p-0.5 bg-white shadow-[4px_4px_0px_#000000]">
+          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Timeframe:</p>
+          <div className="flex h-12 items-center rounded-none border-2 p-0.5" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)', boxShadow: '4px 4px 0px var(--border)' }}>
             <div className="grid grid-cols-4 gap-0 w-full h-full">
               {timeframes.map((tf) => (
                 <button
                   key={tf.value}
                   type="button"
                   onClick={() => handleClick(tf.value)}
-                  className={timeframe === tf.value 
-                    ? 'flex h-full items-center justify-center overflow-hidden px-2 text-sm font-bold leading-normal transition-all duration-200 bg-[var(--accent-color)] text-black shadow-inner scale-95' 
-                    : 'flex h-full items-center justify-center overflow-hidden px-2 text-sm font-bold leading-normal transition-all duration-200 bg-white text-black hover:bg-gray-100 hover:scale-105'
+                  className="flex h-full items-center justify-center overflow-hidden px-2 text-sm font-bold leading-normal transition-all duration-200"
+                  style={timeframe === tf.value 
+                    ? { backgroundColor: 'var(--accent-color)', color: '#000', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', transform: 'scale(0.95)' }
+                    : { backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }
                   }
                 >
                   <span className="truncate">{tf.label}</span>
@@ -46,16 +47,17 @@ const TimeframeSelector = ({ timeframe, onTimeframeChange }) => {
 
       {/* Desktop version */}
       <div className="hidden sm:flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-        <p className="text-sm font-bold text-black whitespace-nowrap">Timeframe:</p>
-        <div className="flex h-10 items-center rounded-none border-2 border-black p-0.5">
+        <p className="text-sm font-bold whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>Timeframe:</p>
+        <div className="flex h-10 items-center rounded-none border-2 p-0.5" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)', boxShadow: '4px 4px 0px var(--border)' }}>
           {timeframes.map((tf) => (
             <button
               key={tf.value}
               type="button"
               onClick={() => handleClick(tf.value)}
-              className={timeframe === tf.value 
-                ? 'flex h-full items-center justify-center overflow-hidden px-2 sm:px-4 text-xs sm:text-sm font-bold leading-normal transition-all duration-200 bg-[var(--accent-color)] text-black shadow-inner scale-95' 
-                : 'flex h-full items-center justify-center overflow-hidden px-2 sm:px-4 text-xs sm:text-sm font-bold leading-normal transition-all duration-200 bg-white text-black hover:bg-gray-100 hover:scale-105'
+              className="flex h-full items-center justify-center overflow-hidden px-2 sm:px-4 text-xs sm:text-sm font-bold leading-normal transition-all duration-200"
+              style={timeframe === tf.value 
+                ? { backgroundColor: 'var(--accent-color)', color: '#000', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', transform: 'scale(0.95)' }
+                : { backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }
               }
             >
               <span className="truncate">{tf.label}</span>

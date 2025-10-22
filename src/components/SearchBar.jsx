@@ -128,7 +128,7 @@ const SearchBar = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <form onSubmit={handleSubmit} className="relative">
-        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-black text-xl">search</span>
+        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-xl" style={{ color: 'var(--text-primary)' }}>search</span>
         <input 
           ref={inputRef}
           type="text"
@@ -136,18 +136,21 @@ const SearchBar = ({
           onChange={handleInputChange}
           onClick={handleInputClick}
           placeholder={placeholder}
-          className={`form-input w-full rounded-none text-black focus:outline-0 focus:ring-2 focus:ring-[var(--accent-color)] border-2 border-black bg-white h-14 placeholder:text-gray-500 px-12 text-base font-medium leading-normal ${
-            error ? 'ring-2 ring-red-500' : ''
-          } ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          className="form-input w-full rounded-none focus:outline-0 focus:ring-2 focus:ring-[var(--accent-color)] border-2 h-14 px-12 text-base font-medium leading-normal"
+          style={{
+            color: 'var(--text-primary)',
+            backgroundColor: 'var(--surface)',
+            borderColor: error ? '#ef4444' : 'var(--border)',
+            opacity: loading ? 0.5 : 1,
+            cursor: loading ? 'not-allowed' : 'text'
+          }}
           disabled={loading}
           autoComplete="off"
         />
         
         {(loading || collectionsState.isLoading) && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+            <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: 'var(--border)', borderTopColor: 'transparent' }}></div>
           </div>
         )}
         
@@ -155,7 +158,8 @@ const SearchBar = ({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
             aria-label="Clear search"
           >
             <span className="material-symbols-outlined text-base">close</span>
@@ -164,16 +168,16 @@ const SearchBar = ({
       </form>
 
       {isDropdownOpen && (filteredCollections.length > 0 || collectionsState.isLoading) && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-black max-h-96 overflow-hidden" style={{fontFamily: 'Space Grotesk, sans-serif'}}>
-          <div className="px-4 py-3 border-b-2 border-black bg-gray-50">
-            <span className="text-black font-bold text-sm">
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 border-2 max-h-96 overflow-hidden" style={{ fontFamily: 'Space Grotesk, sans-serif', backgroundColor: 'var(--surface)', borderColor: 'var(--border)', boxShadow: '4px 4px 0px var(--border)' }}>
+          <div className="px-4 py-3 border-b-2" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
+            <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
               Collections {collectionsState.collections.length > 0 && `(${collectionsState.collections.length})`}
             </span>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {collectionsState.isLoading && filteredCollections.length === 0 ? (
               <div className="flex items-center justify-center p-6">
-                <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full mr-3"></div>
+                <div className="animate-spin h-6 w-6 border-2 border-t-transparent rounded-full mr-3" style={{ borderColor: 'var(--border)', borderTopColor: 'transparent' }}></div>
                 <span className="text-gray-600">Loading collections...</span>
               </div>
             ) : (
@@ -183,21 +187,25 @@ const SearchBar = ({
                 return (
                 <div
                   key={collection.slug}
-                  className="flex items-center p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-200 last:border-b-0"
+                  className="flex items-center p-3 cursor-pointer border-b last:border-b-0"
+                  style={{ borderColor: 'var(--border)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   onClick={() => handleCollectionSelect(collection)}
                 >
                   <div className="w-10 h-10 mr-3 flex-shrink-0">
                     <img 
                       src={collection.image} 
                       alt={collection.name}
-                      className="w-full h-full object-cover rounded-lg border border-gray-300"
+                      className="w-full h-full object-cover rounded-lg border"
+                      style={{ borderColor: 'var(--border)' }}
                       loading="lazy"
                       onError={(e) => handleImageError(e, collection.slug)}
                     />
                   </div>
                   <div className="flex-1 min-w-0 flex items-center justify-between">
-                    <span className="text-black font-medium text-sm truncate">{collection.name}</span>
-                    <span className="ml-2 px-2 py-1 text-xs font-bold text-black bg-yellow-400 border border-black rounded flex-shrink-0">
+                    <span className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{collection.name}</span>
+                    <span className="ml-2 px-2 py-1 text-xs font-bold rounded flex-shrink-0" style={{ color: '#000', backgroundColor: '#ffd700', borderColor: 'var(--border)' }}>
                       #{collection.ranking}
                     </span>
                   </div>

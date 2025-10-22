@@ -107,10 +107,10 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
   const MetricRow = ({ title, value1, value2, loading1, loading2, error1, error2, icon }) => (
     <div className="grid grid-cols-3 border-b-2 border-black last:border-b-0">
       {/* Metric Name Column */}
-      <div className="p-4 border-r-2 border-black bg-gray-50">
+      <div className="p-4 border-r-2 border-black" style={{ backgroundColor: 'var(--surface-hover)' }}>
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-lg text-black">{icon}</span>
-          <h3 className="text-sm font-bold text-black uppercase tracking-wide">{title}</h3>
+          <span className="material-symbols-outlined text-lg" style={{ color: 'var(--text-primary)' }}>{icon}</span>
+          <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>{title}</h3>
         </div>
       </div>
       
@@ -118,13 +118,13 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
       <div className="p-4 border-r-2 border-black">
         {loading1 ? (
           <div className="flex items-center gap-2">
-            <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
-            <span className="text-sm text-gray-500">Loading...</span>
+            <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: 'var(--text-primary)', borderTopColor: 'transparent' }}></div>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading...</span>
           </div>
         ) : error1 ? (
-          <span className="text-sm text-red-600 font-medium">Error</span>
+          <span className="text-sm text-red-600 dark:text-red-400 font-medium">Error</span>
         ) : (
-          <span className="text-lg font-bold text-black">{value1}</span>
+          <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{value1}</span>
         )}
       </div>
       
@@ -132,13 +132,13 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
       <div className="p-4">
         {loading2 ? (
           <div className="flex items-center gap-2">
-            <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
-            <span className="text-sm text-gray-500">Loading...</span>
+            <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: 'var(--text-primary)', borderTopColor: 'transparent' }}></div>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading...</span>
           </div>
         ) : error2 ? (
-          <span className="text-sm text-red-600 font-medium">Error</span>
+          <span className="text-sm text-red-600 dark:text-red-400 font-medium">Error</span>
         ) : (
-          <span className="text-lg font-bold text-black">{value2}</span>
+          <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{value2}</span>
         )}
       </div>
     </div>
@@ -152,16 +152,16 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
   return (
     <div className="collection-metrics">
       <div className="mb-6">
-        <h2 className="text-lg font-bold text-black mb-2">Collection Metrics</h2>
-        <p className="text-sm text-gray-600">Compare key statistics between collections</p>
+        <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Collection Metrics</h2>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Compare key statistics between collections</p>
       </div>
       
       {/* Table-style comparison */}
-      <div className="bg-white border-2 border-black rounded-none">
+      <div className="border-2 border-black rounded-none" style={{ backgroundColor: 'var(--surface)' }}>
         {/* Header Row */}
-        <div className="grid grid-cols-3 border-b-2 border-black bg-gray-100">
+        <div className="grid grid-cols-3 border-b-2 border-black" style={{ backgroundColor: 'var(--surface-hover)' }}>
           <div className="p-4 border-r-2 border-black">
-            <h3 className="text-sm font-bold text-black uppercase tracking-wide">Metric</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>Metric</h3>
           </div>
           <div className="p-4 border-r-2 border-black">
             <div className="text-xs font-medium truncate">
@@ -173,7 +173,7 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
                   {collection1.name}
                 </span>
               ) : (
-                <span className="text-gray-600 font-bold">Collection 1</span>
+                <span className="font-bold" style={{ color: 'var(--text-secondary)' }}>Collection 1</span>
               )}
             </div>
           </div>
@@ -187,7 +187,7 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
                   {collection2.name}
                 </span>
               ) : (
-                <span className="text-gray-600 font-bold">Collection 2</span>
+                <span className="font-bold" style={{ color: 'var(--text-secondary)' }}>Collection 2</span>
               )}
             </div>
           </div>

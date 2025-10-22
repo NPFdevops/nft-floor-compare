@@ -60,11 +60,20 @@ const TradingViewChart = ({
       
       console.log('Chart container dimensions:', { containerWidth, containerHeight });
       
+      // Detect dark mode by checking if .dark class exists on document element
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      
+      // Get colors from CSS variables
+      const rootStyles = getComputedStyle(document.documentElement);
+      const backgroundColor = isDarkMode ? '#1a1a1a' : '#ffffff';
+      const textColor = isDarkMode ? '#e0e0e0' : '#666666';
+      const gridColor = isDarkMode ? '#333333' : '#f0f0f0';
+      
       // Create chart following latest documentation
       const chart = createChart(chartContainerRef.current, {
         layout: {
-          background: { type: 'solid', color: 'white' },
-          textColor: '#666666',
+          background: { type: 'solid', color: backgroundColor },
+          textColor: textColor,
         },
         width: containerWidth,
         height: containerHeight,
@@ -73,7 +82,7 @@ const TradingViewChart = ({
             visible: false,
           },
           horzLines: {
-            color: '#f0f0f0',
+            color: gridColor,
             style: 1,
           },
         },

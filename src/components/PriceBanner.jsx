@@ -124,16 +124,16 @@ const PriceBanner = ({ collection1, collection2 }) => {
   // Show loading state if data is still being fetched
   if (loading.collection1 || loading.collection2) {
     return (
-      <div className="price-banner bg-gray-50 border-2 border-gray-300 rounded-none p-4 mb-6">
+      <div className="price-banner bg-gray-50 dark:bg-[#1a1a1a] border-2 border-gray-300 dark:border-gray-600 rounded-none p-4 mb-6 shadow-[4px_4px_0px_#000000] dark:shadow-[4px_4px_0px_#404040]">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 p-2 rounded-none border-2 bg-gray-400 border-gray-500">
-            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+          <div className="flex-shrink-0 p-2 rounded-none border-2 bg-gray-400 dark:bg-gray-700 border-gray-500 dark:border-gray-600">
+            <div className="animate-spin h-5 w-5 border-2 border-white dark:border-gray-300 border-t-transparent rounded-full"></div>
           </div>
           <div className="flex-1">
-            <div className="text-black font-bold text-lg mb-2">
+            <div className="text-black dark:text-white font-bold text-lg mb-2">
               Price Projection
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-300">
               Calculating price projection for{' '}
               <span 
                 className="font-bold px-2 py-0.5 rounded text-white text-sm"
@@ -158,16 +158,16 @@ const PriceBanner = ({ collection1, collection2 }) => {
   // Show error state if there are errors
   if (error.collection1 || error.collection2) {
     return (
-      <div className="price-banner bg-red-50 border-2 border-red-300 rounded-none p-4 mb-6">
+      <div className="price-banner bg-red-50 dark:bg-red-950/30 border-2 border-red-300 dark:border-red-800 rounded-none p-4 mb-6 shadow-[4px_4px_0px_#000000] dark:shadow-[4px_4px_0px_#404040]">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 p-2 rounded-none border-2 bg-red-500 border-red-600">
+          <div className="flex-shrink-0 p-2 rounded-none border-2 bg-red-500 dark:bg-red-700 border-red-600 dark:border-red-800">
             <span className="material-symbols-outlined text-white text-xl">error</span>
           </div>
           <div className="flex-1">
-            <div className="text-black font-bold text-lg mb-2">
+            <div className="text-black dark:text-white font-bold text-lg mb-2">
               Price Projection
             </div>
-            <div className="text-sm text-red-600">
+            <div className="text-sm text-red-600 dark:text-red-400">
               Unable to calculate price projection. Please try again.
             </div>
           </div>
@@ -185,14 +185,14 @@ const PriceBanner = ({ collection1, collection2 }) => {
   return (
     <div className={`price-banner bg-gradient-to-r ${
       projection.isIncrease 
-        ? 'from-green-50 to-green-100 border-green-500' 
-        : 'from-red-50 to-red-100 border-red-500'
-    } border-2 rounded-none p-4 mb-6`}>
+        ? 'from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border-green-500 dark:border-green-700' 
+        : 'from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 border-red-500 dark:border-red-700'
+    } border-2 rounded-none p-4 mb-6 shadow-[4px_4px_0px_#000000] dark:shadow-[4px_4px_0px_#404040]`}>
       <div className="flex items-start gap-3">
         <div className={`flex-shrink-0 p-2 rounded-none border-2 ${
           projection.isIncrease 
-            ? 'bg-green-500 border-green-600' 
-            : 'bg-red-500 border-red-600'
+            ? 'bg-green-500 dark:bg-green-700 border-green-600 dark:border-green-800' 
+            : 'bg-red-500 dark:bg-red-700 border-red-600 dark:border-red-800'
         }`}>
           <span className="material-symbols-outlined text-white text-xl">
             {projection.isIncrease ? 'trending_up' : 'trending_down'}
@@ -200,11 +200,11 @@ const PriceBanner = ({ collection1, collection2 }) => {
         </div>
         
         <div className="flex-1">
-          <div className="text-black font-bold text-lg mb-2">
+          <div className="text-black dark:text-white font-bold text-lg mb-2">
             Price Projection
           </div>
           
-          <div className="text-sm text-gray-800 leading-relaxed">
+          <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
             The price of{' '}
             <span 
               className="font-bold px-2 py-0.5 rounded text-white text-sm"

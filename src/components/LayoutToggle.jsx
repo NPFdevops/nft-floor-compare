@@ -14,13 +14,15 @@ const LayoutToggle = ({ layout, onLayoutChange }) => {
       {/* Mobile-first design */}
       <div className="block sm:hidden">
         <div className="flex flex-col gap-2 mb-4">
-          <p className="text-sm font-bold text-black">Layout:</p>
-          <div className="flex h-12 items-center rounded-none border-2 border-black p-0.5 bg-white shadow-[4px_4px_0px_#000000]">
-            <label className={`flex cursor-pointer h-full flex-1 items-center justify-center overflow-hidden px-2 text-sm font-bold leading-normal transition-all duration-200 ${
-              layout === 'horizontal' 
-                ? 'bg-[var(--accent-color)] text-black shadow-inner scale-95' 
-                : 'bg-white text-black hover:bg-gray-100 hover:scale-105'
-            }`}>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Layout:</p>
+          <div className="flex h-12 items-center rounded-none border-2 p-0.5" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)', boxShadow: '4px 4px 0px var(--border)' }}>
+            <label 
+              className="flex cursor-pointer h-full flex-1 items-center justify-center overflow-hidden px-2 text-sm font-bold leading-normal transition-all duration-200"
+              style={layout === 'horizontal' 
+                ? { backgroundColor: 'var(--accent-color)', color: '#000', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', transform: 'scale(0.95)' }
+                : { backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }
+              }
+            >
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-lg">view_column</span>
                 <span className="truncate">Side by side</span>
@@ -34,11 +36,13 @@ const LayoutToggle = ({ layout, onLayoutChange }) => {
                 onChange={() => handleLayoutChange('horizontal')}
               />
             </label>
-            <label className={`flex cursor-pointer h-full flex-1 items-center justify-center overflow-hidden px-2 text-sm font-bold leading-normal transition-all duration-200 ${
-              layout === 'vertical' 
-                ? 'bg-[var(--accent-color)] text-black shadow-inner scale-95' 
-                : 'bg-white text-black hover:bg-gray-100 hover:scale-105'
-            }`}>
+            <label 
+              className="flex cursor-pointer h-full flex-1 items-center justify-center overflow-hidden px-2 text-sm font-bold leading-normal transition-all duration-200"
+              style={layout === 'vertical' 
+                ? { backgroundColor: 'var(--accent-color)', color: '#000', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', transform: 'scale(0.95)' }
+                : { backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }
+              }
+            >
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-lg">view_agenda</span>
                 <span className="truncate">Stacked</span>
@@ -58,13 +62,15 @@ const LayoutToggle = ({ layout, onLayoutChange }) => {
 
       {/* Desktop version */}
       <div className="hidden sm:flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-        <p className="text-sm font-bold text-black whitespace-nowrap">Layout:</p>
-        <div className="flex h-10 items-center rounded-none border-2 border-black p-0.5 bg-white shadow-[4px_4px_0px_#000000]">
-          <label className={`flex cursor-pointer h-full w-28 items-center justify-center overflow-hidden px-2 text-xs sm:text-sm font-bold leading-normal transition-all duration-200 ${
-            layout === 'horizontal' 
-              ? 'bg-[var(--accent-color)] text-black shadow-inner scale-95' 
-              : 'bg-white text-black hover:bg-gray-100 hover:scale-105'
-          }`}>
+        <p className="text-sm font-bold whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>Layout:</p>
+        <div className="flex h-10 items-center rounded-none border-2 p-0.5" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)', boxShadow: '4px 4px 0px var(--border)' }}>
+          <label 
+            className="flex cursor-pointer h-full w-28 items-center justify-center overflow-hidden px-2 text-xs sm:text-sm font-bold leading-normal transition-all duration-200"
+            style={layout === 'horizontal' 
+              ? { backgroundColor: 'var(--accent-color)', color: '#000', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', transform: 'scale(0.95)' }
+              : { backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }
+            }
+          >
             <div className="flex items-center gap-1">
               <span className="material-symbols-outlined text-base">view_column</span>
               <span className="truncate hidden sm:inline">Side by side</span>
@@ -78,11 +84,13 @@ const LayoutToggle = ({ layout, onLayoutChange }) => {
               onChange={() => handleLayoutChange('horizontal')}
             />
           </label>
-          <label className={`flex cursor-pointer h-full w-28 items-center justify-center overflow-hidden px-2 text-xs sm:text-sm font-bold leading-normal transition-all duration-200 ${
-            layout === 'vertical' 
-              ? 'bg-[var(--accent-color)] text-black shadow-inner scale-95' 
-              : 'bg-white text-black hover:bg-gray-100 hover:scale-105'
-          }`}>
+          <label 
+            className="flex cursor-pointer h-full w-28 items-center justify-center overflow-hidden px-2 text-xs sm:text-sm font-bold leading-normal transition-all duration-200"
+            style={layout === 'vertical' 
+              ? { backgroundColor: 'var(--accent-color)', color: '#000', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', transform: 'scale(0.95)' }
+              : { backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }
+            }
+          >
             <div className="flex items-center gap-1">
               <span className="material-symbols-outlined text-base">view_agenda</span>
               <span className="truncate hidden sm:inline">Stacked</span>

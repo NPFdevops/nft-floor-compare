@@ -12,17 +12,17 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
   ];
   const renderLoadingState = () => (
     <div className="flex flex-col items-center justify-center h-full w-full gap-4" style={{ minHeight: '350px' }}>
-      <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-black text-lg font-medium text-center px-6">Loading collection data...</p>
+      <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--text-primary)', borderTopColor: 'transparent' }}></div>
+      <p className="text-lg font-medium text-center px-6" style={{ color: 'var(--text-primary)' }}>Loading collection data...</p>
     </div>
   );
 
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center h-full w-full gap-4" style={{ minHeight: '350px' }}>
-      <div className="text-gray-400 text-6xl">
+      <div className="text-gray-400 dark:text-gray-500 text-6xl">
         <span className="material-symbols-outlined text-6xl">search</span>
       </div>
-      <p className="text-gray-600 text-lg font-medium text-center px-6">Select a collection to view its floor price chart</p>
+      <p className="text-gray-600 dark:text-gray-400 text-lg font-medium text-center px-6">Select a collection to view its floor price chart</p>
     </div>
   );
 
@@ -67,11 +67,11 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
     const collections = [collection, collection2].filter(Boolean);
     
   return (
-    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white">
-      <div className="flex flex-col border-b-2 border-black px-6 py-4 flex-shrink-0">
+    <div className="flex flex-col h-full rounded-none border-2" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}>
+      <div className="flex flex-col border-b-2 px-6 py-4 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-black text-lg font-bold leading-normal">Floor Price Comparison: </span>
+            <span className="text-lg font-bold leading-normal" style={{ color: 'var(--text-primary)' }}>Floor Price Comparison (last 18 months): </span>
             {collections.map((coll, index) => {
               if (!coll?.name) return null;
               const color = chartColors[index] || chartColors[0];
@@ -84,7 +84,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
                     {coll.name}
                   </div>
                   {index < collections.length - 1 && (
-                    <span className="text-black text-lg font-bold leading-normal mx-1">vs</span>
+                    <span className="text-lg font-bold leading-normal mx-1" style={{ color: 'var(--text-primary)' }}>vs</span>
                   )}
                 </span>
               );
@@ -100,7 +100,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               return (
                 <div key={coll.name} className="text-right">
                   <p className="text-sm font-bold" style={{ color: color }}>{coll.name}</p>
-                  <p className="text-black text-base font-bold">{formatPrice(price)}</p>
+                  <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatPrice(price)}</p>
                   {change !== null && (
                     <p className={`text-xs font-medium ${
                       change >= 0 ? 'text-green-600' : 'text-red-600'
@@ -143,8 +143,8 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
   const priceChange = getPriceChange();
 
   return (
-    <div className="flex flex-col h-full rounded-none border-2 border-black bg-white">
-      <div className="flex flex-col border-b-2 border-black px-6 py-4 flex-shrink-0">
+    <div className="flex flex-col h-full rounded-none border-2" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}>
+      <div className="flex flex-col border-b-2 px-6 py-4 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
         <div className="flex justify-between items-start">
           <div 
             className="px-3 py-1 rounded text-lg font-bold leading-normal text-white"
@@ -154,7 +154,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
           </div>
           {floorPrice && (
             <div className="text-right">
-              <p className="text-black text-lg font-bold">{formatPrice(floorPrice)}</p>
+              <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{formatPrice(floorPrice)}</p>
               {priceChange !== null && (
                 <p className={`text-sm font-medium ${
                   priceChange >= 0 ? 'text-green-600' : 'text-red-600'
