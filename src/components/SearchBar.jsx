@@ -2,14 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { collectionsService } from '../services/collectionsService';
 import { generateLegacyCollectionImage } from '../data/collections.js';
 
-const SearchBar = ({ 
+const SearchBar = React.forwardRef(({ 
   placeholder, 
   onSearch, 
   onClear, 
   loading, 
   error, 
   selectedCollection 
-}) => {
+}, ref) => {
   const [query, setQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [filteredCollections, setFilteredCollections] = useState([]);
@@ -131,8 +131,15 @@ const SearchBar = ({
         <div className="absolute left-3 inset-y-0 pointer-events-none flex items-center justify-center" style={{ width: '24px' }}>
           <span className="material-symbols-outlined text-xl" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>search</span>
         </div>
-        <input 
-          ref={inputRef}
+        <input
+          ref={(node) => {
+            inputRef.current = node;
+            if (typeof ref === 'function') {
+              ref(node);
+            } else if (ref) {
+              ref.current = node;
+            }
+          }}
           type="text"
           value={query}
           onChange={handleInputChange}
@@ -238,6 +245,8 @@ const SearchBar = ({
       {/* Selected collection display hidden per requirements */}
     </div>
   );
-};
+});
+
+SearchBar.displayName = 'SearchBar';
 
 export default SearchBar;

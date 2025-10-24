@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePostHog } from 'posthog-js/react';
 import SearchBar from './components/SearchBar';
@@ -35,6 +35,7 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false); // Track if URL initialization is complete
   const [isMobile, setIsMobile] = useState(false); // Track if viewport is mobile size
   const [currency, setCurrency] = useState('ETH'); // Track currency display (ETH or USD)
+  const searchBar1Ref = useRef(null); // Ref for first SearchBar to trigger focus
   
   // Responsive layout effect - detect mobile viewport
   useEffect(() => {
@@ -370,12 +371,14 @@ function App() {
             <ComparisonExamples 
               onSelectComparison={handleComparisonSelect}
               isMobile={isMobile}
+              onOpenSearch={() => searchBar1Ref.current?.click()}
             />
             
             {/* Search Controls */}
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 pb-6">
+            <div className="flex flex-col min-[767px]:flex-row items-center gap-4 md:gap-6 pb-6">
               <div className="w-full md:flex-1">
-                <SearchBar 
+                <SearchBar
+                  ref={searchBar1Ref}
                   placeholder="Search for a collection A"
                   onSearch={(slug) => handleCollectionSearch(slug, 1)}
                   onClear={() => clearCollection(1)}

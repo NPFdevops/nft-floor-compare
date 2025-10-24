@@ -6,7 +6,7 @@ const generateCollectionImage = (slug) => {
   return `https://s3.amazonaws.com/cdn.nftpricefloor/projects/v1/${slug}.png?version=6`;
 };
 
-const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
+const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
   const [activeExample, setActiveExample] = React.useState(null);
   
   // Popular NFT collection comparisons using NFTPriceFloor slugs and S3 CDN images
@@ -53,6 +53,15 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
     onSelectComparison(example.collection1.slug, example.collection2.slug);
   };
 
+  const handleCustomClick = () => {
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50); // Haptic feedback
+    }
+    if (onOpenSearch) {
+      onOpenSearch();
+    }
+  };
+
   /**
    * Handle image loading errors with graceful fallbacks
    * @param {Event} event - Image error event
@@ -88,9 +97,8 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
             <button
               key={index}
               onClick={() => handleClick(example, index)}
-              className="group relative border-2 rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-3"
+              className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-3"
               style={{
-                borderColor: 'var(--border)',
                 backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
               }}
               title={`${example.collection1.name} vs ${example.collection2.name}`}
@@ -130,17 +138,16 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
     );
   }
 
-  // Desktop: Show 8 examples with images and names in a 4-column grid
+  // Desktop: Show 8 examples with images and names, 3 per row on desktop
   return (
     <div className="mb-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {examples.map((example, index) => (
             <button
             key={index}
             onClick={() => handleClick(example, index)}
-            className="group relative border-2 rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4"
+            className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4"
             style={{
-              borderColor: 'var(--border)',
               backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
             }}
           >
@@ -194,6 +201,51 @@ const ComparisonExamples = ({ onSelectComparison, isMobile }) => {
             </div>
           </button>
         ))}
+        
+        {/* Custom Card - Opens Search */}
+        <button
+          onClick={handleCustomClick}
+          className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4 hover:bg-[var(--surface-hover)]"
+          style={{
+            backgroundColor: 'var(--surface)'
+          }}
+          title="Choose your own collections"
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              {/* Collection 1 - Empty */}
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--text-secondary)' }}>?</span>
+                </div>
+                <span 
+                  className="text-xs font-medium truncate"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  ???
+                </span>
+              </div>
+              
+              {/* VS Badge */}
+              <div className="flex-shrink-0 text-white px-2 py-1 text-[10px] font-bold bg-[#E3579A]">
+                VS
+              </div>
+              
+              {/* Collection 2 - Empty */}
+              <div className="flex items-center gap-2 flex-1 min-w-0 flex-row-reverse">
+                <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--text-secondary)' }}>?</span>
+                </div>
+                <span 
+                  className="text-xs font-medium truncate text-right"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  ???
+                </span>
+              </div>
+            </div>
+          </div>
+        </button>
       </div>
     </div>
   );
