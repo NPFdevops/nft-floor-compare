@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import posthog from 'posthog-js';
+import { safeCapture, safeRegister } from '../utils/analytics';
 
 const ThemeContext = createContext();
 
@@ -49,10 +51,10 @@ export const ThemeProvider = ({ children }) => {
         setThemeMode(savedMode);
         updateActualTheme(savedMode);
       } else {
-        // Default to system mode
-        setThemeMode('system');
-        updateActualTheme('system');
-        localStorage.setItem('themeMode', 'system');
+        // Default to light mode
+        setThemeMode('light');
+        updateActualTheme('light');
+        localStorage.setItem('themeMode', 'light');
       }
       setIsInitialized(true);
     }
@@ -82,7 +84,19 @@ export const ThemeProvider = ({ children }) => {
   }, [themeMode]);
 
   const changeThemeMode = (mode) => {
+    const previousMode = themeMode;
     setThemeMode(mode);
+    
+    // Track theme preference saved
+    safeCapture(posthog, 'theme_preference_saved', {
+      value: mode,
+      previous_value: previousMode
+    });
+    
+    // Register as user property
+    safeRegister(posthog, {
+      theme_preference: mode
+    });
   };
 
   const toggleTheme = () => {

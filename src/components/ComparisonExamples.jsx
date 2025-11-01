@@ -1,5 +1,7 @@
 import React from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { generateLegacyCollectionImage } from '../data/collections';
+import { safeCapture, getDeviceType } from '../utils/analytics';
 
 // Helper function to generate NFTPriceFloor S3 CDN image URL
 const generateCollectionImage = (slug) => {
@@ -8,6 +10,7 @@ const generateCollectionImage = (slug) => {
 
 const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
   const [activeExample, setActiveExample] = React.useState(null);
+  const posthog = usePostHog();
   
   // Popular NFT collection comparisons using NFTPriceFloor slugs and S3 CDN images
   const examples = [
@@ -49,6 +52,17 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
     if (window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(50); // Haptic feedback
     }
+    
+    // Track example comparison click
+    safeCapture(posthog, 'example_comparison_clicked', {
+      example_id: index,
+      collection1_slug: example.collection1.slug,
+      collection2_slug: example.collection2.slug,
+      collection1_name: example.collection1.name,
+      collection2_name: example.collection2.name,
+      device_type: getDeviceType()
+    });
+    
     setActiveExample(index);
     onSelectComparison(example.collection1.slug, example.collection2.slug);
   };
@@ -57,6 +71,12 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
     if (window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(50); // Haptic feedback
     }
+    
+    // Track custom comparison click
+    safeCapture(posthog, 'custom_comparison_clicked', {
+      device_type: getDeviceType()
+    });
+    
     if (onOpenSearch) {
       onOpenSearch();
     }

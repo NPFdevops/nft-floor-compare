@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePostHog } from 'posthog-js/react';
+import { 
+  safeCapture, 
+  safeRegister, 
+  startTimer, 
+  endTimer,
+  getDeviceType,
+  getReferrerDomain,
+  getUtmParams,
+  isFirstVisit,
+  markFirstVisit,
+  incrementSessionCount,
+  getSessionCount,
+  getTotalComparisons,
+  getFavoriteCollections
+} from './utils/analytics';
 import SearchBar from './components/SearchBar';
 import ChartDisplay from './components/ChartDisplay';
 import ScreenshotShare from './components/ScreenshotShare';
@@ -23,6 +38,11 @@ function App() {
   const { isDark } = useTheme();
   const posthog = usePostHog();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Session tracking refs
+  const sessionTimerRef = useRef(null);
+  const visibilityTimerRef = useRef(null);
+  const sessionEndFiredRef = useRef(false);
   
   // Parse initial state from URL parameters - memoize to prevent re-creation
   const initialUrlState = React.useMemo(() => parseUrlParams(searchParams), []);
@@ -51,6 +71,84 @@ function App() {
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+  
+  // Session lifecycle tracking
+  useEffect(() => {
+    // Track session start
+    const deviceType = getDeviceType();
+    const referrerDomain = getReferrerDomain();
+    const utmParams = getUtmParams();
+    const isFirst = isFirstVisit();
+    const firstVisitDate = markFirstVisit() ? new Date().toISOString() : null;
+    const sessionCount = incrementSessionCount();
+    const totalComparisons = getTotalComparisons();
+    const favoriteCollections = getFavoriteCollections();
+    
+    // Register persistent user properties
+    safeRegister(posthog, {
+      device_type: deviceType,
+      first_visit_date: firstVisitDate || undefined,
+      session_count: sessionCount,
+      total_comparisons: totalComparisons,
+      favorite_collections: favoriteCollections
+    });
+    
+    // Capture session start event
+    safeCapture(posthog, 'app_session_start', {
+      device_type: deviceType,
+      referrer_domain: referrerDomain,
+      is_first_visit: isFirst,
+      is_return_visit: !isFirst,
+      session_count: sessionCount,
+      total_comparisons: totalComparisons,
+      favorite_collections_count: favoriteCollections.length,
+      ...utmParams
+    });
+    
+    // Start session active time timer
+    sessionTimerRef.current = startTimer('session_active_ms');
+    visibilityTimerRef.current = Date.now();
+    
+    // Track visibility changes
+    const handleVisibilityChange = () => {
+      const state = document.visibilityState;
+      
+      safeCapture(posthog, 'page_visibility_changed', {
+        state: state,
+        previous_state: state === 'visible' ? 'hidden' : 'visible'
+      });
+      
+      // Update active time calculation
+      if (state === 'visible') {
+        visibilityTimerRef.current = Date.now();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Track session end on unload/page hide
+    const handleSessionEnd = () => {
+      if (sessionEndFiredRef.current) return;
+      sessionEndFiredRef.current = true;
+      
+      const activeMs = endTimer(sessionTimerRef.current);
+      
+      safeCapture(posthog, 'app_session_end', {
+        active_ms: activeMs,
+        total_comparisons: getTotalComparisons(),
+        session_count: getSessionCount()
+      });
+    };
+    
+    window.addEventListener('beforeunload', handleSessionEnd);
+    window.addEventListener('pagehide', handleSessionEnd);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleSessionEnd);
+      window.removeEventListener('pagehide', handleSessionEnd);
+    };
+  }, [posthog]);
 
   // URL initialization effect - load collections from URL on first load
   useEffect(() => {

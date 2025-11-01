@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import TradingViewChart from './TradingViewChart';
 import './TradingViewChart.css';
+import { 
+  safeCapture, 
+  safeRegister, 
+  startTimer, 
+  endTimer, 
+  sanitizeError, 
+  incrementTotalComparisons, 
+  addFavoriteCollection,
+  getFavoriteCollections 
+} from '../utils/analytics';
 
 const ChartDisplay = ({ collection, collection2, title, loading, error, timeframe, onRangeChange, isComparison, currency = 'ETH' }) => {
+  const posthog = usePostHog();
+  const renderTimerRef = useRef(null);
+  
   // Chart colors matching TradingViewChart
   const chartColors = [
     '#e91e63', // Pink
@@ -61,6 +75,72 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
       return `${parseFloat(price).toFixed(2)} ETH`;
     }
   };
+  
+  // Track chart loading lifecycle
+  useEffect(() => {
+    if (!collection && !collection2) {
+      // Empty state
+      safeCapture(posthog, 'empty_state_viewed', {
+        reason: 'no_selection',
+        is_comparison: isComparison
+      });
+      return;
+    }
+    
+    if (loading) {
+      // Start render timer
+      renderTimerRef.current = startTimer('chart_render');
+      return;
+    }
+    
+    if (error) {
+      // Track failure
+      safeCapture(posthog, 'chart_load_failed', {
+        collection1_slug: collection?.slug,
+        collection2_slug: collection2?.slug,
+        timeframe: timeframe || '30d',
+        code: typeof error === 'string' ? 'error' : (error.code || 'unknown'),
+        message_sanitized: sanitizeError(error),
+        is_comparison: isComparison,
+        currency: currency
+      });
+      return;
+    }
+    
+    if (collection || collection2) {
+      // Track successful load
+      const renderMs = endTimer(renderTimerRef.current);
+      const pointsCount = (collection?.data?.length || 0) + (collection2?.data?.length || 0);
+      
+      safeCapture(posthog, 'chart_loaded', {
+        collection1_slug: collection?.slug,
+        collection2_slug: collection2?.slug,
+        timeframe: timeframe || '30d',
+        points_count: pointsCount,
+        data_source: 'db', // Default assumption, adjust if you have this info
+        render_ms: renderMs,
+        is_comparison: isComparison,
+        currency: currency,
+        has_both_collections: !!(collection && collection2)
+      });
+      
+      // Update user properties
+      const totalComparisons = incrementTotalComparisons();
+      safeRegister(posthog, { total_comparisons: totalComparisons });
+      
+      // Track favorite collections
+      if (collection?.slug) {
+        addFavoriteCollection(collection.slug);
+      }
+      if (collection2?.slug) {
+        addFavoriteCollection(collection2.slug);
+      }
+      
+      // Update favorite_collections in PostHog
+      const favorites = getFavoriteCollections();
+      safeRegister(posthog, { favorite_collections: favorites });
+    }
+  }, [collection, collection2, loading, error, posthog, isComparison, timeframe, currency]);
 
   // Handle comparison view (stacked layout with both collections)
   if (isComparison) {
@@ -71,7 +151,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
       <div className="flex flex-col border-b-2 px-6 py-4 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-lg font-bold leading-normal" style={{ color: 'var(--text-primary)' }}>Floor Price Comparison (last 18 months): </span>
+            <span className="text-lg font-bold leading-normal" style={{ color: 'var(--text-primary)' }}>Floor Price Comparison: </span>
             {collections.map((coll, index) => {
               if (!coll?.name) return null;
               const color = chartColors[index] || chartColors[0];

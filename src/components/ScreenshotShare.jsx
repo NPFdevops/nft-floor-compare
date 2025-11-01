@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { createShareableUrl, generateShareTitle } from '../utils/urlUtils';
 import './TradingViewChart.css';
+import { safeCapture, getDeviceType, sanitizeError } from '../utils/analytics';
 
 const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout }) => {
   const posthog = usePostHog();
@@ -75,14 +76,18 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
         link.click();
         document.body.removeChild(link);
         
-        // Track successful screenshot
+        // Track successful screenshot with enhanced properties
         posthog?.capture('screenshot_completed', {
           filename: filename,
           collection1_slug: collection1?.slug,
           collection2_slug: collection2?.slug,
           timeframe: timeframe,
           layout: layout,
-          has_both_collections: !!(collection1 && collection2)
+          has_both_collections: !!(collection1 && collection2),
+          dpr: window.devicePixelRatio || 2,
+          image_bytes: blob.size,
+          area: 'chart_container',
+          device_type: getDeviceType()
         });
         
         // Clean up the URL after a delay
@@ -93,6 +98,16 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
 
     } catch (error) {
       console.error('Error capturing screenshot:', error);
+      
+      // Track screenshot failure
+      posthog?.capture('screenshot_failed', {
+        collection1_slug: collection1?.slug,
+        collection2_slug: collection2?.slug,
+        code: error.code || 'exception',
+        message_sanitized: sanitizeError(error),
+        device_type: getDeviceType()
+      });
+      
       alert('Failed to capture screenshot. Please try again.');
     } finally {
       setIsCapturing(false);
@@ -141,13 +156,21 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
+        // Track clipboard success
+        safeCapture(posthog, 'copy_to_clipboard_success', {
+          content_length: text.length,
+          method: 'clipboard_api',
+          collection1_slug: collection1?.slug,
+          collection2_slug: collection2?.slug
+        });
+        
         // Success haptic feedback
         if (window.navigator && window.navigator.vibrate) {
           window.navigator.vibrate(25);
         }
         showToast('Link copied to clipboard!');
       }).catch(() => {
-        showToast('Unable to copy to clipboard.');
+        showToast('Unable to clipboard.');
       });
     } else {
       // Fallback for older browsers
@@ -157,6 +180,15 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
       textArea.select();
       try {
         document.execCommand('copy');
+        
+        // Track fallback clipboard success
+        safeCapture(posthog, 'copy_to_clipboard_success', {
+          content_length: text.length,
+          method: 'execCommand',
+          collection1_slug: collection1?.slug,
+          collection2_slug: collection2?.slug
+        });
+        
         if (window.navigator && window.navigator.vibrate) {
           window.navigator.vibrate(25);
         }
@@ -184,7 +216,17 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
     }, 2000);
   };
 
-  const ActionSheet = () => (
+  const ActionSheet = () => {
+    // Track when action sheet opens
+    useEffect(() => {
+      safeCapture(posthog, 'share_sheet_opened', {
+        device_type: getDeviceType(),
+        collection1_slug: collection1?.slug,
+        collection2_slug: collection2?.slug
+      });
+    }, []);
+    
+    return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:hidden"
       onClick={() => setShowActionSheet(false)}
@@ -254,7 +296,8 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <>

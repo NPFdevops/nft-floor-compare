@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { useTheme } from '../contexts/ThemeContext';
+import { safeCapture, safeRegister } from '../utils/analytics';
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const { themeMode, actualTheme, setThemeMode, isSystem } = useTheme();
+  const posthog = usePostHog();
+  
+  // Track modal open
+  useEffect(() => {
+    if (isOpen) {
+      safeCapture(posthog, 'settings_opened', {});
+    }
+  }, [isOpen, posthog]);
 
   if (!isOpen) return null;
 
@@ -17,6 +27,11 @@ const SettingsModal = ({ isOpen, onClose }) => {
   };
 
   const handleClose = () => {
+    // Track modal close
+    safeCapture(posthog, 'settings_closed', {
+      theme_preference: themeMode
+    });
+    
     // Add haptic feedback on mobile
     if (window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(1);
@@ -120,7 +135,14 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       if (window.navigator && window.navigator.vibrate) {
                         window.navigator.vibrate(1);
                       }
+                      
+                      safeCapture(posthog, 'theme_changed', {
+                        previous: themeMode,
+                        next: 'light'
+                      });
+                      
                       setThemeMode('light');
+                      safeRegister(posthog, { theme_preference: 'light' });
                     }}
                     className="sr-only"
                   />
@@ -179,7 +201,14 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       if (window.navigator && window.navigator.vibrate) {
                         window.navigator.vibrate(1);
                       }
+                      
+                      safeCapture(posthog, 'theme_changed', {
+                        previous: themeMode,
+                        next: 'dark'
+                      });
+                      
                       setThemeMode('dark');
+                      safeRegister(posthog, { theme_preference: 'dark' });
                     }}
                     className="sr-only"
                   />
@@ -238,7 +267,14 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       if (window.navigator && window.navigator.vibrate) {
                         window.navigator.vibrate(1);
                       }
+                      
+                      safeCapture(posthog, 'theme_changed', {
+                        previous: themeMode,
+                        next: 'system'
+                      });
+                      
                       setThemeMode('system');
+                      safeRegister(posthog, { theme_preference: 'system' });
                     }}
                     className="sr-only"
                   />

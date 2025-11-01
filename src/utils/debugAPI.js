@@ -9,7 +9,7 @@ import { fetchFloorPriceHistory, searchCollections, fetchTopCollections } from '
  */
 export const testAPIConnection = async (collectionSlug = 'azuki') => {
   console.log('🧪 Testing NFTPriceFloor API Connection...');
-  console.log('📡 Endpoint:', `nftpf-api-v0.p.rapidapi.com/projects/${collectionSlug}/charts/1d`);
+  console.log('📡 Endpoint:', `nftpf-api-v0.p.rapidapi.com/projects/${collectionSlug}/charts/all`);
   
   try {
     const startTime = Date.now();

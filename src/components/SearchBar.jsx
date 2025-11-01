@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { collectionsService } from '../services/collectionsService';
 import { generateLegacyCollectionImage } from '../data/collections.js';
+import { safeCapture, getDeviceType, sanitizeError } from '../utils/analytics';
 
 const SearchBar = React.forwardRef(({ 
   placeholder, 
@@ -20,6 +22,12 @@ const SearchBar = React.forwardRef(({
   });
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+  const debounceTimer = useRef(null);
+  const posthog = usePostHog();
+  const deviceType = getDeviceType();
+  
+  // Determine slot based on placeholder
+  const slot = placeholder.includes('A') ? '1' : '2';
 
   // Subscribe to collections service updates
   useEffect(() => {
@@ -66,6 +74,20 @@ const SearchBar = React.forwardRef(({
     const filtered = collectionsService.searchCollections(value, 20);
     setFilteredCollections(filtered);
     
+    // Debounced analytics tracking
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      if (value.length >= 3) {
+        safeCapture(posthog, 'search_query_typed', {
+          q: value.substring(0, 50), // Truncate for safety
+          q_len: value.length,
+          debounce_ms: 300,
+          suggestions_count: filtered.length,
+          slot: slot
+        });
+      }
+    }, 300);
+    
     // Keep dropdown open while typing
     if (!isDropdownOpen) {
       setIsDropdownOpen(true);
@@ -73,6 +95,13 @@ const SearchBar = React.forwardRef(({
   };
 
   const handleInputClick = () => {
+    // Track search input focus
+    safeCapture(posthog, 'search_input_focused', {
+      slot: slot,
+      device_type: deviceType,
+      has_existing_query: query.length > 0
+    });
+    
     setIsDropdownOpen(true);
     if (!query.trim()) {
       const filtered = collectionsService.searchCollections('', 20);
@@ -81,6 +110,16 @@ const SearchBar = React.forwardRef(({
   };
 
   const handleCollectionSelect = (collection) => {
+    // Track collection selection
+    safeCapture(posthog, 'collection_selected', {
+      slot: slot,
+      collection_slug: collection.slug,
+      collection_name: collection.name,
+      source: 'dropdown',
+      device_type: deviceType,
+      ranking: collection.ranking
+    });
+    
     setQuery(collection.name);
     setIsDropdownOpen(false);
     onSearch(collection.slug);
@@ -92,6 +131,12 @@ const SearchBar = React.forwardRef(({
   };
 
   const handleClear = () => {
+    // Track search clear
+    safeCapture(posthog, 'search_cleared', {
+      slot: slot,
+      had_query: query.length > 0
+    });
+    
     setQuery('');
     setIsDropdownOpen(false);
     setFilteredCollections([]);

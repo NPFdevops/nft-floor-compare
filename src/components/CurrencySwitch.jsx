@@ -1,9 +1,20 @@
 import React from 'react';
+import { usePostHog } from 'posthog-js/react';
+import { safeCapture, getDeviceType } from '../utils/analytics';
 
 const CurrencySwitch = ({ currency, onCurrencyChange }) => {
+  const posthog = usePostHog();
+  
   const handleToggle = () => {
     const newCurrency = currency === 'ETH' ? 'USD' : 'ETH';
     onCurrencyChange(newCurrency);
+    
+    // Track currency change
+    safeCapture(posthog, 'currency_toggled', {
+      from: currency,
+      to: newCurrency,
+      device_type: getDeviceType()
+    });
     
     // Add haptic feedback on mobile
     if (window.navigator && window.navigator.vibrate) {

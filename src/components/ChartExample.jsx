@@ -4,7 +4,7 @@ import { fetchFloorPriceHistory } from '../services/nftAPI';
 
 /**
  * Example component demonstrating how to render TradingView chart
- * with data from NFTPriceFloor API endpoint: /projects/azuki/charts/1d
+ * with data from NFTPriceFloor API endpoint: /projects/azuki/charts/all
  */
 const ChartExample = () => {
   const [collectionData, setCollectionData] = useState(null);
@@ -23,7 +23,7 @@ const ChartExample = () => {
     console.log(`🔄 Loading data for ${collectionSlug}...`);
     
     try {
-      // This calls the NFTPriceFloor API: nftpf-api-v0.p.rapidapi.com/projects/azuki/charts/1d
+      // This calls the NFTPriceFloor API: nftpf-api-v0.p.rapidapi.com/projects/azuki/charts/all
       const result = await fetchFloorPriceHistory(collectionSlug);
       
       if (result.success) {
@@ -88,7 +88,7 @@ const ChartExample = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">TradingView Chart with NFTPriceFloor API</h1>
         <p className="text-gray-600">
-          Example showing how to render charts with data from <code>nftpf-api-v0.p.rapidapi.com/projects/azuki/charts/1d</code>
+          Example showing how to render charts with data from <code>nftpf-api-v0.p.rapidapi.com/projects/azuki/charts/all</code>
         </p>
       </div>
 

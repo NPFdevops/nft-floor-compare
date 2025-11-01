@@ -106,10 +106,10 @@ const formatPriceData = (apiData, currency = 'ETH') => {
  * @param {string} currency - Currency to use ('ETH' or 'USD')
  * @returns {Promise<Object>} Floor price data with timestamps and prices
  */
-export const fetchFloorPriceHistory = async (collectionSlug, granularity = '1d', startTimestamp = null, endTimestamp = null, timeframe = '30d', currency = 'ETH') => {
+export const fetchFloorPriceHistory = async (collectionSlug, granularity = 'all', startTimestamp = null, endTimestamp = null, timeframe = '30d', currency = 'ETH') => {
   try {
     // Generate cache key including currency to prevent cross-currency cache conflicts
-    const cacheKey = `${collectionSlug}-charts-1d-${currency}`;
+    const cacheKey = `${collectionSlug}-charts-all-${currency}`;
     
     // Try to get from cache first (multi-layer cache with stale support)
     const cachedResult = await cacheService.get(cacheKey, '1h', true);
@@ -208,7 +208,7 @@ async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
   console.log(`🔄 Fetching fresh data for ${collectionSlug}`);
   console.log('API request params:', {
     collectionSlug,
-    endpoint: `/projects/${collectionSlug}/charts/1d`
+    endpoint: `/projects/${collectionSlug}/charts/all`
   });
   
   // Check for cached ETag
@@ -227,7 +227,7 @@ async function fetchFreshData(collectionSlug, cacheKey, currency = 'ETH') {
   
   try {
     const response = await apiClient.get(
-      `/projects/${collectionSlug}/charts/1d`,
+      `/projects/${collectionSlug}/charts/all`,
       requestConfig
     );
     

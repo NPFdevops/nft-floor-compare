@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { fetchCollectionDetails } from '../services/nftAPI';
+import { safeCapture, sanitizeError } from '../utils/analytics';
 
 const CollectionMetrics = ({ collection1, collection2, loading: parentLoading }) => {
+  const posthog = usePostHog();
+  
   // Chart colors matching the chart component
   const chartColors = {
     collection1: '#e91e63', // Pink
@@ -21,6 +25,24 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
     collection2: null
   });
 
+  // Track metrics view when both collections are loaded
+  useEffect(() => {
+    if ((collection1 || collection2) && !parentLoading.collection1 && !parentLoading.collection2) {
+      const availableMetrics = [];
+      if (metrics.collection1) availableMetrics.push(...Object.keys(metrics.collection1));
+      if (metrics.collection2) availableMetrics.push(...Object.keys(metrics.collection2));
+      
+      if (availableMetrics.length > 0) {
+        safeCapture(posthog, 'metrics_viewed', {
+          collection1_slug: collection1?.slug,
+          collection2_slug: collection2?.slug,
+          metrics: [...new Set(availableMetrics)],
+          has_both: !!(collection1 && collection2)
+        });
+      }
+    }
+  }, [collection1, collection2, metrics, parentLoading, posthog]);
+  
   // Fetch metrics for both collections when they change
   useEffect(() => {
     if (collection1?.slug) {
@@ -51,12 +73,35 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
       
       if (result.success) {
         setMetrics(prev => ({ ...prev, [key]: result.data }));
+        
+        // Track successful metrics load
+        safeCapture(posthog, 'metrics_load_success', {
+          collection_slug: slug,
+          collection_number: collectionNumber,
+          metrics_count: Object.keys(result.data || {}).length
+        });
       } else {
         setError(prev => ({ ...prev, [key]: result.error }));
+        
+        // Track metrics load failure
+        safeCapture(posthog, 'metrics_load_failed', {
+          collection_slug: slug,
+          collection_number: collectionNumber,
+          code: result.error?.code || 'unknown',
+          message_sanitized: sanitizeError(result.error)
+        });
       }
     } catch (err) {
       console.error(`Error fetching metrics for ${slug}:`, err);
       setError(prev => ({ ...prev, [key]: 'Failed to fetch collection metrics' }));
+      
+      // Track exception
+      safeCapture(posthog, 'metrics_load_failed', {
+        collection_slug: slug,
+        collection_number: collectionNumber,
+        code: 'exception',
+        message_sanitized: sanitizeError(err)
+      });
     } finally {
       setLoading(prev => ({ ...prev, [key]: false }));
     }
