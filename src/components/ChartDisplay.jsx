@@ -13,7 +13,7 @@ import {
   getFavoriteCollections 
 } from '../utils/analytics';
 
-const ChartDisplay = ({ collection, collection2, title, loading, error, timeframe, onRangeChange, isComparison, currency = 'ETH' }) => {
+const ChartDisplay = ({ collection, collection2, title, loading, error, timeframe, onRangeChange, isComparison, currency = 'ETH', isLogScale = false, currentTimeRange = 'All' }) => {
   const posthog = usePostHog();
   const renderTimerRef = useRef(null);
   
@@ -210,6 +210,8 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               onRangeChange={onRangeChange}
               height={450}
               currency={currency}
+              isLogScale={isLogScale}
+              currentTimeRange={currentTimeRange}
             />
           </div>
         )}
@@ -261,6 +263,8 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               onRangeChange={onRangeChange}
               height={420}
               currency={currency}
+              isLogScale={isLogScale}
+              currentTimeRange={currentTimeRange}
             />
           </div>
         )}

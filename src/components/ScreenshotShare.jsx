@@ -316,16 +316,23 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
       </div>
 
       {/* Desktop version */}
-      <div className="hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-3">
-        <button 
+      <>
+        <button
           onClick={captureScreenshot}
           disabled={isCapturing}
-          className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-white text-black gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-gray-100 transition-colors"
+          className="hidden sm:flex items-center justify-center rounded-none h-10 border-2 gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 transition-all duration-200 hover:scale-105"
+          style={{
+            borderColor: 'var(--accent-color)',
+            backgroundColor: 'var(--surface)',
+            color: 'var(--text-primary)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--surface)'}
           title="Capture and download screenshot"
         >
           {isCapturing ? (
             <>
-              <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+              <div className="animate-spin h-4 w-4 border-2 rounded-full" style={{ borderColor: 'var(--text-primary)', borderTopColor: 'transparent' }}></div>
               <span className="truncate hidden sm:inline">Capturing...</span>
             </>
           ) : (
@@ -336,15 +343,15 @@ const ScreenshotShare = ({ targetId, collection1, collection2, timeframe, layout
           )}
         </button>
 
-        <button 
+        <button
           onClick={shareUrl}
-          className="flex items-center justify-center rounded-none h-10 border-2 border-black bg-blue-500 text-white gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-blue-600 transition-colors"
+          className="hidden sm:flex items-center justify-center rounded-none h-10 border-2 border-black bg-blue-500 text-white gap-2 text-sm font-bold leading-normal min-w-0 px-3 sm:px-4 hover:bg-blue-600 transition-colors"
           title="Share comparison URL"
         >
           <span className="material-symbols-outlined">link</span>
           <span className="truncate hidden sm:inline">Share URL</span>
         </button>
-      </div>
+      </>
 
       {showActionSheet && <ActionSheet />}
     </>

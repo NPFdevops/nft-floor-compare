@@ -20,12 +20,15 @@ import SearchBar from './components/SearchBar';
 import ChartDisplay from './components/ChartDisplay';
 import ScreenshotShare from './components/ScreenshotShare';
 import CacheStats from './components/CacheStats';
+import ChartMetrics from './components/ChartMetrics';
 import CollectionMetrics from './components/CollectionMetrics';
 import PriceBanner from './components/PriceBanner';
 import CurrencySwitch from './components/CurrencySwitch';
+import LogScaleSwitch from './components/LogScaleSwitch';
+import TimeRangeSwitch from './components/TimeRangeSwitch';
 import ComparisonExamples from './components/ComparisonExamples';
 import SettingsModal from './components/SettingsModal';
-import { fetchFloorPriceHistory } from './services/nftAPI';
+import { fetchFloorPriceHistory, fetchFloorPriceHistory1d } from './services/nftAPI';
 import { parseUrlParams, createUrlParams } from './utils/urlUtils';
 import { collectionsService } from './services/collectionsService';
 import { useTheme } from './contexts/ThemeContext';
@@ -55,6 +58,8 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false); // Track if URL initialization is complete
   const [isMobile, setIsMobile] = useState(false); // Track if viewport is mobile size
   const [currency, setCurrency] = useState('ETH'); // Track currency display (ETH or USD)
+  const [isLogScale, setIsLogScale] = useState(false); // Track log scale toggle (linear vs logarithmic)
+  const [timeRange, setTimeRange] = useState('All'); // Track selected time range (30D, 90D, YTD, All)
   const searchBar1Ref = useRef(null); // Ref for first SearchBar to trigger focus
   
   // Responsive layout effect - detect mobile viewport
@@ -239,10 +244,13 @@ function App() {
     setLoading(prev => ({ ...prev, [loadingKey]: true }));
     setError(prev => ({ ...prev, [errorKey]: null }));
 
+    // Reset time range to "All" when searching for a new collection
+    setTimeRange('All');
+
     try {
       // New API endpoint doesn't use timestamps or granularity, pass null/default values
       const result = await fetchFloorPriceHistory(collectionSlug, '1d', null, null, '30d', currency);
-      
+
       if (result.success) {
         const collectionSetter = collectionNumber === 1 ? setCollection1 : setCollection2;
         const properCollectionName = getCollectionName(collectionSlug);
@@ -251,7 +259,8 @@ function App() {
           name: properCollectionName,
           data: result.priceHistory,
           rawData: result.rawData, // Store raw data for currency switching
-          granularity: '1d'
+          granularity: 'all',
+          timeRange: 'All'
         });
         console.log('✅ Successfully updated collection', collectionNumber, properCollectionName);
         
@@ -344,7 +353,7 @@ function App() {
   const handleCurrencyChange = (newCurrency) => {
     console.log('💰 Currency changed to:', newCurrency);
     setCurrency(newCurrency);
-    
+
     // Track currency change analytics
     posthog?.capture('currency_changed', {
       previous_currency: currency,
@@ -352,9 +361,195 @@ function App() {
       has_collection1: !!collection1,
       has_collection2: !!collection2
     });
-    
+
     // No need to re-fetch data - the ChartDisplay will use reformatted data
     console.log('📊 Charts will automatically update with reformatted data');
+  };
+
+  // Handle log scale change
+  const handleLogScaleChange = (newLogScale) => {
+    console.log('📊 Log scale changed to:', newLogScale ? 'logarithmic' : 'linear');
+    setIsLogScale(newLogScale);
+
+    // Track log scale change analytics
+    posthog?.capture('log_scale_changed', {
+      previous_scale: isLogScale ? 'logarithmic' : 'linear',
+      new_scale: newLogScale ? 'logarithmic' : 'linear',
+      has_collection1: !!collection1,
+      has_collection2: !!collection2
+    });
+  };
+
+  // Handle time range change
+  const handleTimeRangeChange = async (newTimeRange) => {
+    console.log('📅 Time range changed to:', newTimeRange);
+    setTimeRange(newTimeRange);
+
+    // If 'All' is selected, refetch using the 'all' endpoint
+    if (newTimeRange === 'All') {
+      console.log('🔄 Refetching "All" historical data');
+      // Track analytics
+      posthog?.capture('time_range_changed', {
+        previous_range: timeRange,
+        new_range: newTimeRange,
+        requires_fetch: true,
+        has_collection1: !!collection1,
+        has_collection2: !!collection2
+      });
+
+      // Refetch data for active collections using 'all' endpoint
+      const refetchPromises = [];
+
+      if (collection1?.slug) {
+        refetchPromises.push(
+          (async () => {
+            setLoading(prev => ({ ...prev, collection1: true }));
+            setError(prev => ({ ...prev, collection1: null }));
+
+            try {
+              const result = await fetchFloorPriceHistory(collection1.slug, 'all', null, null, '30d', currency);
+
+              if (result.success) {
+                setCollection1({
+                  slug: collection1.slug,
+                  name: collection1.name,
+                  data: result.priceHistory,
+                  rawData: result.rawData,
+                  granularity: 'all',
+                  timeRange: newTimeRange
+                });
+                console.log(`✅ Successfully fetched all data for ${collection1.name}`);
+              } else {
+                setError(prev => ({ ...prev, collection1: result.error }));
+              }
+            } catch (err) {
+              console.error('❌ Error fetching all data for collection1:', err);
+              setError(prev => ({ ...prev, collection1: 'Failed to fetch collection data' }));
+            } finally {
+              setLoading(prev => ({ ...prev, collection1: false }));
+            }
+          })()
+        );
+      }
+
+      if (collection2?.slug) {
+        refetchPromises.push(
+          (async () => {
+            setLoading(prev => ({ ...prev, collection2: true }));
+            setError(prev => ({ ...prev, collection2: null }));
+
+            try {
+              const result = await fetchFloorPriceHistory(collection2.slug, 'all', null, null, '30d', currency);
+
+              if (result.success) {
+                setCollection2({
+                  slug: collection2.slug,
+                  name: collection2.name,
+                  data: result.priceHistory,
+                  rawData: result.rawData,
+                  granularity: 'all',
+                  timeRange: newTimeRange
+                });
+                console.log(`✅ Successfully fetched all data for ${collection2.name}`);
+              } else {
+                setError(prev => ({ ...prev, collection2: result.error }));
+              }
+            } catch (err) {
+              console.error('❌ Error fetching all data for collection2:', err);
+              setError(prev => ({ ...prev, collection2: 'Failed to fetch collection data' }));
+            } finally {
+              setLoading(prev => ({ ...prev, collection2: false }));
+            }
+          })()
+        );
+      }
+
+      // Wait for all refetch promises to complete
+      await Promise.all(refetchPromises);
+      return;
+    }
+
+    // For 30D, 90D, YTD - fetch from 1d endpoint and apply filter
+    console.log(`🔄 Fetching 1d data for time range: ${newTimeRange}`);
+
+    // Track analytics
+    posthog?.capture('time_range_changed', {
+      previous_range: timeRange,
+      new_range: newTimeRange,
+      requires_fetch: true,
+      has_collection1: !!collection1,
+      has_collection2: !!collection2
+    });
+
+    // Refetch data for active collections using 1d endpoint
+    const refetchPromises = [];
+
+    if (collection1?.slug) {
+      refetchPromises.push(
+        (async () => {
+          setLoading(prev => ({ ...prev, collection1: true }));
+          setError(prev => ({ ...prev, collection1: null }));
+
+          try {
+            const result = await fetchFloorPriceHistory1d(collection1.slug, currency);
+
+            if (result.success) {
+              setCollection1({
+                slug: collection1.slug,
+                name: collection1.name,
+                data: result.priceHistory,
+                rawData: result.rawData,
+                granularity: '1d',
+                timeRange: newTimeRange
+              });
+              console.log(`✅ Successfully fetched 1d data for ${collection1.name}`);
+            } else {
+              setError(prev => ({ ...prev, collection1: result.error }));
+            }
+          } catch (err) {
+            console.error('❌ Error fetching 1d data for collection1:', err);
+            setError(prev => ({ ...prev, collection1: 'Failed to fetch collection data' }));
+          } finally {
+            setLoading(prev => ({ ...prev, collection1: false }));
+          }
+        })()
+      );
+    }
+
+    if (collection2?.slug) {
+      refetchPromises.push(
+        (async () => {
+          setLoading(prev => ({ ...prev, collection2: true }));
+          setError(prev => ({ ...prev, collection2: null }));
+
+          try {
+            const result = await fetchFloorPriceHistory1d(collection2.slug, currency);
+
+            if (result.success) {
+              setCollection2({
+                slug: collection2.slug,
+                name: collection2.name,
+                data: result.priceHistory,
+                rawData: result.rawData,
+                granularity: '1d',
+                timeRange: newTimeRange
+              });
+              console.log(`✅ Successfully fetched 1d data for ${collection2.name}`);
+            } else {
+              setError(prev => ({ ...prev, collection2: result.error }));
+            }
+          } catch (err) {
+            console.error('❌ Error fetching 1d data for collection2:', err);
+            setError(prev => ({ ...prev, collection2: 'Failed to fetch collection data' }));
+          } finally {
+            setLoading(prev => ({ ...prev, collection2: false }));
+          }
+        })()
+      );
+    }
+
+    // Wait for all refetch promises to complete
+    await Promise.all(refetchPromises);
   };
 
   // Handle comparison example selection
@@ -522,37 +717,32 @@ function App() {
             
             
             {/* Price Banner */}
-            <PriceBanner 
+            <PriceBanner
               collection1={collection1}
               collection2={collection2}
             />
-            
-            {/* Charts Section */}
-            <div className="flex flex-1 min-h-[500px]" id="chart-container">
-              {/* Always use stacked layout (vertical is default) */}
-              <div className="w-full h-full flex flex-col">
-                <div className="flex-1">
-                  <ChartDisplay 
-                    collection={reformatCollectionData(collection1, currency)}
-                    collection2={reformatCollectionData(collection2, currency)}
-                    title="Floor Price Comparison"
-                    loading={loading.collection1 || loading.collection2}
-                    error={error.collection1 || error.collection2}
-                    isComparison={true}
-                    currency={currency}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Screenshot and Share Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-3 py-6">
-              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
-                <CurrencySwitch 
+
+            {/* Chart Controls - Above Chart */}
+            <div className="flex flex-row items-center justify-between gap-2 md:gap-3 py-6 flex-wrap">
+              {/* Left Side - Currency and Log Scale */}
+              <div className="flex items-center gap-2 md:gap-3">
+                <CurrencySwitch
                   currency={currency}
                   onCurrencyChange={handleCurrencyChange}
                 />
-                <ScreenshotShare 
+                <LogScaleSwitch
+                  isLogScale={isLogScale}
+                  onLogScaleChange={handleLogScaleChange}
+                />
+              </div>
+
+              {/* Right Side - Time Range and Share */}
+              <div className="flex items-center gap-2 md:gap-3">
+                <TimeRangeSwitch
+                  timeRange={timeRange}
+                  onTimeRangeChange={handleTimeRangeChange}
+                />
+                <ScreenshotShare
                   targetId="chart-container"
                   collection1={collection1}
                   collection2={collection2}
@@ -560,10 +750,40 @@ function App() {
                 />
               </div>
             </div>
+
+            {/* Charts Section */}
+            <div className="flex flex-1 min-h-[500px]" id="chart-container">
+              {/* Always use stacked layout (vertical is default) */}
+              <div className="w-full h-full flex flex-col">
+                <div className="flex-1">
+                  <ChartDisplay
+                    collection={reformatCollectionData(collection1, currency)}
+                    collection2={reformatCollectionData(collection2, currency)}
+                    title="Floor Price Comparison"
+                    loading={loading.collection1 || loading.collection2}
+                    error={error.collection1 || error.collection2}
+                    isComparison={true}
+                    currency={currency}
+                    isLogScale={isLogScale}
+                    currentTimeRange={timeRange}
+                  />
+                </div>
+              </div>
+            </div>
             
+            {/* Chart Metrics */}
+            <div className="mt-8">
+              <ChartMetrics
+                collection1={collection1}
+                collection2={collection2}
+                currency={currency}
+                timeRange={timeRange}
+              />
+            </div>
+
             {/* Collection Metrics */}
             <div className="mt-8">
-              <CollectionMetrics 
+              <CollectionMetrics
                 collection1={collection1}
                 collection2={collection2}
                 loading={loading}

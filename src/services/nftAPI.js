@@ -536,6 +536,140 @@ async function fetchFreshCollectionDetails(collectionSlug, cacheKey) {
 }
 
 /**
+ * Fetch floor price history with 1d granularity
+ * @param {string} collectionSlug - The collection identifier/slug
+ * @param {string} currency - Currency to use ('ETH' or 'USD')
+ * @returns {Promise<Object>} Floor price data with timestamps and prices
+ */
+export const fetchFloorPriceHistory1d = async (collectionSlug, currency = 'ETH') => {
+  try {
+    // Generate cache key including currency to prevent cross-currency cache conflicts
+    const cacheKey = `${collectionSlug}-charts-1d-${currency}`;
+
+    // Try to get from cache first (multi-layer cache with stale support)
+    const cachedResult = await cacheService.get(cacheKey, '1h', true);
+    if (cachedResult && !cachedResult.isStale) {
+      console.log(`✅ Using fresh cached 1d data for ${collectionSlug}`);
+      return cachedResult.data;
+    }
+
+    // If we have stale data, return it immediately and fetch fresh in background
+    if (cachedResult && cachedResult.isStale) {
+      console.log(`⚡ Using stale 1d data for ${collectionSlug}, fetching fresh in background`);
+      // Return stale data immediately
+      const staleData = cachedResult.data;
+
+      // Fetch fresh data in background (don't await)
+      fetchFresh1dData(collectionSlug, cacheKey, currency).catch(err => {
+        console.warn('Background 1d refresh failed:', err);
+      });
+
+      return staleData;
+    }
+
+    // Use request deduplication to prevent duplicate simultaneous requests
+    return await cacheService.deduplicate(cacheKey, async () => {
+      return await fetchFresh1dData(collectionSlug, cacheKey, currency);
+    });
+  } catch (error) {
+    console.error(`❌ Error fetching 1d floor price for ${collectionSlug}:`, error);
+
+    // Enhanced error handling
+    let errorMessage = 'Unknown error occurred';
+    let errorDetails = {};
+
+    if (error.code === 'ENOTFOUND') {
+      errorMessage = 'DNS resolution failed - Check if the API host is correct';
+      errorDetails = { host: RAPIDAPI_HOST };
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Request timeout - API took too long to respond';
+    } else if (error.response) {
+      const status = error.response.status;
+      errorMessage = `API Error (${status}): ${error.response.data?.message || error.response.statusText}`;
+      errorDetails = {
+        status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      };
+
+      if (status === 401) {
+        errorMessage = 'Authentication failed - Check your RapidAPI key';
+      } else if (status === 403) {
+        errorMessage = 'Access forbidden - Check API permissions or subscription status';
+      } else if (status === 429) {
+        errorMessage = 'Rate limit exceeded - Too many requests';
+      } else if (status === 404) {
+        errorMessage = `Collection '${collectionSlug}' not found or endpoint unavailable`;
+      }
+    } else if (error.request) {
+      errorMessage = 'Network error - Unable to reach the API';
+      errorDetails = {
+        code: error.code,
+        message: error.message,
+        baseURL: API_BASE_URL
+      };
+    } else {
+      errorMessage = error.message || 'Request setup error';
+    }
+
+    console.error('🔍 1d Error details:', {
+      message: errorMessage,
+      details: errorDetails,
+      originalError: error.message,
+      apiBaseUrl: API_BASE_URL,
+      hasApiKey: !!RAPIDAPI_KEY
+    });
+
+    return {
+      success: false,
+      error: errorMessage,
+      errorDetails,
+      data: null
+    };
+  }
+};
+
+/**
+ * Internal function to fetch fresh 1d data from API
+ */
+async function fetchFresh1dData(collectionSlug, cacheKey, currency = 'ETH') {
+  console.log(`🔄 Fetching fresh 1d data for ${collectionSlug}`);
+  console.log('API request params:', {
+    collectionSlug,
+    endpoint: `/projects/${collectionSlug}/charts/1d`
+  });
+
+  const response = await apiClient.get(`/projects/${collectionSlug}/charts/1d`);
+
+  console.log('API 1d response status:', response.status);
+  console.log('API 1d response data structure:', Object.keys(response.data));
+
+  const data = response.data;
+  const formattedPriceHistory = formatPriceData(data, currency);
+
+  const collectionName = data.slug || collectionSlug;
+
+  const result = {
+    success: true,
+    data: data,
+    collectionName: collectionName,
+    priceHistory: formattedPriceHistory,
+    rawData: {
+      dataPoints: data,
+      timestamps: data.timestamps,
+      floorEth: data.floorNative,
+      floorUsd: data.floorUsd
+    }
+  };
+
+  // Cache the result with 1 hour TTL
+  await cacheService.set(cacheKey, result, '1h');
+
+  return result;
+}
+
+/**
  * Get current floor price for a collection
  * This will use the latest data from the history endpoint
  * @param {string} collectionSlug - The collection identifier/slug

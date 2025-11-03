@@ -3,31 +3,83 @@ import { createChart, AreaSeries } from 'lightweight-charts';
 import './TradingViewChart.css';
 import logoImage from '../assets/NFTPriceFloor_logo.png';
 
-const TradingViewChart = ({ 
-  collections = [], 
+const TradingViewChart = ({
+  collections = [],
   title = 'Floor Price Chart',
   onRangeChange,
   height = 400,
-  currency = 'ETH'
+  currency = 'ETH',
+  isLogScale = false,
+  currentTimeRange = 'All' // Prop to sync selected range from parent
 }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef();
   const seriesRefs = useRef([]);
-  const [selectedRange, setSelectedRange] = useState('30D');
+  const [selectedRange, setSelectedRange] = useState(currentTimeRange);
+
+  // Sync local state with prop when it changes
+  useEffect(() => {
+    setSelectedRange(currentTimeRange);
+  }, [currentTimeRange]);
 
   const ranges = [
-    { label: '7D', days: 7 },
     { label: '30D', days: 30 },
     { label: '90D', days: 90 },
-    { label: '1Y', days: 365 }
+    { label: 'YTD', days: null }, // null indicates YTD calculation
+    { label: 'All', days: null }
   ];
 
   const colors = [
     { line: '#e91e63', top: 'rgba(233, 30, 99, 0.2)', bottom: 'rgba(233, 30, 99, 0.05)' }, // Pink gradient
-    { line: '#9c27b0', top: 'rgba(156, 39, 176, 0.2)', bottom: 'rgba(156, 39, 176, 0.05)' }, // Purple gradient  
+    { line: '#9c27b0', top: 'rgba(156, 39, 176, 0.2)', bottom: 'rgba(156, 39, 176, 0.05)' }, // Purple gradient
     { line: '#673ab7', top: 'rgba(103, 58, 183, 0.2)', bottom: 'rgba(103, 58, 183, 0.05)' }, // Deep purple gradient
     { line: '#3f51b5', top: 'rgba(63, 81, 181, 0.2)', bottom: 'rgba(63, 81, 181, 0.05)' }  // Indigo gradient
   ];
+
+  // Filter data based on selected time range
+  const filterDataByRange = (data, rangeLabel) => {
+    if (!data || data.length === 0) return data;
+
+    const now = new Date();
+    let cutoffDate;
+
+    if (rangeLabel === 'All') {
+      console.log('🔵 Range is "All" - returning all data');
+      return data; // Return all data
+    } else if (rangeLabel === 'YTD') {
+      // Year to date - from Jan 1 of current year
+      cutoffDate = new Date(now.getFullYear(), 0, 1);
+      console.log(`🔵 YTD filter - cutoff date: ${cutoffDate.toISOString()}`);
+    } else {
+      // For 30D, 90D - calculate days back
+      const range = ranges.find(r => r.label === rangeLabel);
+      if (!range || !range.days) {
+        console.log(`⚠️ Invalid range: ${rangeLabel}, returning all data`);
+        return data;
+      }
+
+      cutoffDate = new Date(now);
+      cutoffDate.setDate(cutoffDate.getDate() - range.days);
+      console.log(`🔵 ${rangeLabel} filter - cutoff date: ${cutoffDate.toISOString()}, days: ${range.days}`);
+    }
+
+    // Filter data points after cutoff date
+    const filtered = data.filter(point => {
+      const pointDate = point.x instanceof Date ? point.x : new Date(point.x);
+      return pointDate >= cutoffDate;
+    });
+
+    console.log(`🔵 Filtered ${data.length} points to ${filtered.length} points for range ${rangeLabel}`);
+    if (filtered.length > 0) {
+      const firstPoint = filtered[0];
+      const lastPoint = filtered[filtered.length - 1];
+      const firstDate = firstPoint.x instanceof Date ? firstPoint.x : new Date(firstPoint.x);
+      const lastDate = lastPoint.x instanceof Date ? lastPoint.x : new Date(lastPoint.x);
+      console.log(`🔵 Date range: ${firstDate.toISOString()} to ${lastDate.toISOString()}`);
+    }
+
+    return filtered;
+  };
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -98,6 +150,7 @@ const TradingViewChart = ({
             precision: currency === 'USD' ? 2 : 2,
             minMove: currency === 'USD' ? 0.01 : 0.01,
           },
+          mode: isLogScale ? 1 : 0, // 0 = Normal, 1 = Logarithmic
         },
         timeScale: {
           borderVisible: false,
@@ -164,11 +217,21 @@ const TradingViewChart = ({
         hasData: !!collection?.data,
         dataLength: collection?.data?.length,
         sampleData: collection?.data?.slice(0, 3),
-        colorConfig: colors[index] || colors[0]
+        colorConfig: colors[index] || colors[0],
+        selectedRange
       });
-      
+
       if (collection && collection.data && Array.isArray(collection.data) && collection.data.length > 0) {
         try {
+          // Filter data based on selected time range
+          const filteredData = filterDataByRange(collection.data, selectedRange);
+
+          console.log(`📊 Filtered data for ${collection.name}:`, {
+            originalLength: collection.data.length,
+            filteredLength: filteredData.length,
+            selectedRange
+          });
+
           // Use v5.0 API with AreaSeries type for gradient fill
           const colorConfig = colors[index] || colors[0];
           const areaSeries = chart.addSeries(AreaSeries, {
@@ -187,7 +250,7 @@ const TradingViewChart = ({
 
           // Convert data format for TradingView Lightweight Charts
           // Data format: [{ time: '2018-12-22', value: 32.51 }, ...]
-          const chartData = collection.data
+          const chartData = filteredData
             .filter(point => {
               // More robust data validation (from HEAD)
               if (!point || !point.x) return false;
@@ -227,7 +290,7 @@ const TradingViewChart = ({
           console.log(`📊 TradingViewChart data transformation for ${collection.name}:`, {
             collectionIndex: index,
             originalDataLength: collection.data.length,
-            afterFilterLength: collection.data.filter(point => {
+            afterFilterLength: filteredData.filter(point => {
               if (!point || !point.x) return false;
               if (point.y === undefined || point.y === null) return false;
               const value = parseFloat(point.y);
@@ -237,7 +300,7 @@ const TradingViewChart = ({
               return true;
             }).length,
             chartDataLength: chartData.length,
-            sampleOriginalData: collection.data.slice(0, 3),
+            sampleOriginalData: filteredData.slice(0, 3),
             sampleChartData: chartData.slice(0, 3),
             // Check for duplicates
             hasDuplicateTimes: chartData.length !== new Set(chartData.map(d => d.time)).size,
@@ -317,14 +380,7 @@ const TradingViewChart = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [collections, height, currency]);
-
-  const handleRangeClick = (range) => {
-    setSelectedRange(range.label);
-    if (onRangeChange) {
-      onRangeChange(range.days);
-    }
-  };
+  }, [collections, height, currency, isLogScale, selectedRange]);
 
   // Show placeholder if no valid data
   if (!collections || collections.length === 0 || !collections.some(c => c && c.data && c.data.length > 0)) {
@@ -343,17 +399,17 @@ const TradingViewChart = ({
 
   return (
     <div className="trading-view-chart-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <div 
-        ref={chartContainerRef} 
+      <div
+        ref={chartContainerRef}
         className="chart-container"
-        style={{ 
-          width: '100%', 
+        style={{
+          width: '100%',
           height: `${height}px`,
           minHeight: `${height}px`
         }}
       />
       {/* Logo Watermark Overlay */}
-      <div 
+      <div
         className="chart-logo-watermark"
         style={{
           position: 'absolute',
@@ -366,9 +422,9 @@ const TradingViewChart = ({
           userSelect: 'none'
         }}
       >
-        <img 
-          src={logoImage} 
-          alt="NFT Price Floor" 
+        <img
+          src={logoImage}
+          alt="NFT Price Floor"
           style={{
             height: '60px',
             width: 'auto',
