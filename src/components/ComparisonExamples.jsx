@@ -117,33 +117,41 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
             <button
               key={index}
               onClick={() => handleClick(example, index)}
-              className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-3"
+              className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#E3579A] active:scale-95 p-3"
               style={{
-                backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
+                backgroundColor: activeExample === index ? '#E3579A' : '#f5f5f5'
               }}
               title={`${example.collection1.name} vs ${example.collection2.name}`}
             >
               <div className="flex items-center justify-center gap-2">
                 {/* Collection 1 Image */}
-                <div className="w-12 h-12 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
-                  <img 
-                    src={example.collection1.image} 
+                <div className="relative w-12 h-12 border-2 border-black rounded-none overflow-hidden flex-shrink-0 bg-white transform group-hover:scale-110 group-hover:rotate-[-5deg] transition-all duration-200">
+                  <img
+                    src={example.collection1.image}
                     alt={example.collection1.name}
                     className="w-full h-full object-cover"
                     loading="lazy"
                     onError={(e) => handleImageError(e, example.collection1.slug)}
                   />
                 </div>
-                
-                {/* VS Text */}
-                <span className={`text-xs font-bold hover:scale-105 transition-transform duration-200 ${
-                  activeExample === index ? 'text-white bg-black px-2 py-1' : 'text-white bg-[#E3579A] px-2 py-1'
-                }`}>VS</span>
-                
+
+                {/* VS Badge */}
+                <div className="relative z-10">
+                  <span
+                    className="inline-block text-xs font-black border-2 border-black rounded-none transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-200 px-2 py-1"
+                    style={{
+                      backgroundColor: activeExample === index ? 'white' : '#E3579A',
+                      color: activeExample === index ? '#E3579A' : 'white'
+                    }}
+                  >
+                    VS
+                  </span>
+                </div>
+
                 {/* Collection 2 Image */}
-                <div className="w-12 h-12 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
-                  <img 
-                    src={example.collection2.image} 
+                <div className="relative w-12 h-12 border-2 border-black rounded-none overflow-hidden flex-shrink-0 bg-white transform group-hover:scale-110 group-hover:rotate-[5deg] transition-all duration-200">
+                  <img
+                    src={example.collection2.image}
                     alt={example.collection2.name}
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -158,65 +166,54 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
     );
   }
 
-  // Desktop: Show 8 examples with images and names, 3 per row on desktop
+  // Desktop: Show 8 examples with images only, 4 per row on desktop
   return (
     <div className="mb-6">
-      <div className="grid grid-cols-3 gap-4">
-        {examples.map((example, index) => (
+      <div className="grid grid-cols-4 gap-3">
+        {examples.slice(0, 7).map((example, index) => (
             <button
             key={index}
             onClick={() => handleClick(example, index)}
-            className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4"
+            className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#E3579A] active:scale-95 p-3"
             style={{
-              backgroundColor: activeExample === index ? '#E3579A' : 'var(--surface)'
+              backgroundColor: activeExample === index ? '#E3579A' : '#f5f5f5'
             }}
+            title={`${example.collection1.name} vs ${example.collection2.name}`}
           >
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-2">
-                {/* Collection 1 */}
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
-                    <img 
-                      src={example.collection1.image} 
-                      alt={example.collection1.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => handleImageError(e, example.collection1.slug)}
-                    />
-                  </div>
-                  <span 
-                    className="text-xs font-medium truncate"
-                    style={{ color: activeExample === index ? 'white' : 'var(--text-primary)' }}
-                  >
-                    {example.collection1.name}
-                  </span>
-                </div>
-                
-                {/* VS Badge */}
-                <div className={`flex-shrink-0 text-white px-2 py-1 text-[10px] font-bold hover:scale-105 transition-transform duration-200 ${
-                  activeExample === index ? 'bg-black' : 'bg-[#E3579A]'
-                }`}>
+            <div className="flex items-center justify-center gap-3">
+              {/* Collection 1 */}
+              <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 bg-white transform group-hover:scale-110 group-hover:rotate-[-3deg] transition-all duration-200">
+                <img
+                  src={example.collection1.image}
+                  alt={example.collection1.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => handleImageError(e, example.collection1.slug)}
+                />
+              </div>
+
+              {/* VS Badge */}
+              <div className="relative z-10 flex-shrink-0">
+                <span
+                  className="inline-block text-sm font-black border-2 border-black rounded-none transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-200 px-3 py-1.5"
+                  style={{
+                    backgroundColor: activeExample === index ? 'white' : '#E3579A',
+                    color: activeExample === index ? '#E3579A' : 'white'
+                  }}
+                >
                   VS
-                </div>
-                
-                {/* Collection 2 */}
-                <div className="flex items-center gap-2 flex-1 min-w-0 flex-row-reverse">
-                  <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
-                    <img 
-                      src={example.collection2.image} 
-                      alt={example.collection2.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => handleImageError(e, example.collection2.slug)}
-                    />
-                  </div>
-                  <span 
-                    className="text-xs font-medium truncate text-right"
-                    style={{ color: activeExample === index ? 'white' : 'var(--text-primary)' }}
-                  >
-                    {example.collection2.name}
-                  </span>
-                </div>
+                </span>
+              </div>
+
+              {/* Collection 2 */}
+              <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 bg-white transform group-hover:scale-110 group-hover:rotate-[3deg] transition-all duration-200">
+                <img
+                  src={example.collection2.image}
+                  alt={example.collection2.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => handleImageError(e, example.collection2.slug)}
+                />
               </div>
             </div>
           </button>
@@ -225,44 +222,28 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
         {/* Custom Card - Opens Search */}
         <button
           onClick={handleCustomClick}
-          className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)] active:scale-95 p-4 hover:bg-[var(--surface-hover)]"
+          className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#E3579A] active:scale-95 p-3"
           style={{
-            backgroundColor: 'var(--surface)'
+            backgroundColor: '#FFD93D'
           }}
           title="Choose your own collections"
         >
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              {/* Collection 1 - Empty */}
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
-                  <span className="text-2xl font-bold" style={{ color: 'var(--text-secondary)' }}>?</span>
-                </div>
-                <span 
-                  className="text-xs font-medium truncate"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  ???
-                </span>
-              </div>
-              
-              {/* VS Badge */}
-              <div className="flex-shrink-0 text-white px-2 py-1 text-[10px] font-bold bg-[#E3579A]">
+          <div className="flex items-center justify-center gap-3">
+            {/* Collection 1 - Empty */}
+            <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 flex items-center justify-center bg-white transform group-hover:scale-110 group-hover:rotate-[-3deg] transition-all duration-200">
+              <span className="text-3xl font-bold text-gray-400 group-hover:scale-125 transition-transform duration-200">?</span>
+            </div>
+
+            {/* VS Badge */}
+            <div className="relative z-10 flex-shrink-0">
+              <span className="inline-block text-sm font-black text-white bg-[#E3579A] px-3 py-1.5 border-2 border-black rounded-none transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-200">
                 VS
-              </div>
-              
-              {/* Collection 2 - Empty */}
-              <div className="flex items-center gap-2 flex-1 min-w-0 flex-row-reverse">
-                <div className="w-10 h-10 border-2 overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}>
-                  <span className="text-2xl font-bold" style={{ color: 'var(--text-secondary)' }}>?</span>
-                </div>
-                <span 
-                  className="text-xs font-medium truncate text-right"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  ???
-                </span>
-              </div>
+              </span>
+            </div>
+
+            {/* Collection 2 - Empty */}
+            <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 flex items-center justify-center bg-white transform group-hover:scale-110 group-hover:rotate-[3deg] transition-all duration-200">
+              <span className="text-3xl font-bold text-gray-400 group-hover:scale-125 transition-transform duration-200">?</span>
             </div>
           </div>
         </button>

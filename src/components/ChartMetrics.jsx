@@ -63,23 +63,21 @@ const ChartMetrics = ({ collection1, collection2, currency = 'ETH', timeRange = 
     const rangeHigh = Math.max(...filteredPoints.map(p => p.y));
     const rangeLow = Math.min(...filteredPoints.map(p => p.y));
 
-    // Calculate All-Time High and Low from full dataset
-    const allDataPoints = collection.data.filter(point => point.y > 0);
-
+    // Calculate High and Low from filtered dataset (not all-time if range is selected)
     let athPrice = null;
     let athDate = null;
     let atlPrice = null;
     let atlDate = null;
 
-    if (allDataPoints.length > 0) {
-      // Find ATH
-      athPrice = Math.max(...allDataPoints.map(p => p.y));
-      const athPoint = allDataPoints.find(p => p.y === athPrice);
+    if (filteredPoints.length > 0) {
+      // Find High (use rangeHigh for consistency)
+      athPrice = rangeHigh;
+      const athPoint = filteredPoints.find(p => p.y === athPrice);
       athDate = athPoint ? athPoint.x : null;
 
-      // Find ATL
-      atlPrice = Math.min(...allDataPoints.map(p => p.y));
-      const atlPoint = allDataPoints.find(p => p.y === atlPrice);
+      // Find Low (use rangeLow for consistency)
+      atlPrice = rangeLow;
+      const atlPoint = filteredPoints.find(p => p.y === atlPrice);
       atlDate = atlPoint ? atlPoint.x : null;
     }
 
@@ -190,6 +188,11 @@ const ChartMetrics = ({ collection1, collection2, currency = 'ETH', timeRange = 
       );
     }
 
+    // Determine if we're showing all-time or period-specific metrics
+    const isAllTime = timeRange === 'All';
+    const highLabel = isAllTime ? 'All-Time High' : 'Period High';
+    const lowLabel = isAllTime ? 'All-Time Low' : 'Period Low';
+
     return (
       <div className="space-y-3">
         {/* Range */}
@@ -207,14 +210,14 @@ const ChartMetrics = ({ collection1, collection2, currency = 'ETH', timeRange = 
           </p>
         </div>
 
-        {/* All-Time High */}
+        {/* Period/All-Time High */}
         <div className="p-3 md:p-4 rounded" style={{ backgroundColor: 'var(--surface-hover)' }}>
           <div className="flex items-center gap-2 mb-2">
             <span className="material-symbols-outlined text-base md:text-lg text-green-600">
               trending_up
             </span>
             <h3 className="text-xs md:text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>
-              All-Time High
+              {highLabel}
             </h3>
           </div>
           <div className="space-y-1">
@@ -232,14 +235,14 @@ const ChartMetrics = ({ collection1, collection2, currency = 'ETH', timeRange = 
           </div>
         </div>
 
-        {/* All-Time Low */}
+        {/* Period/All-Time Low */}
         <div className="p-3 md:p-4 rounded" style={{ backgroundColor: 'var(--surface-hover)' }}>
           <div className="flex items-center gap-2 mb-2">
             <span className="material-symbols-outlined text-base md:text-lg text-red-600">
               trending_down
             </span>
             <h3 className="text-xs md:text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>
-              All-Time Low
+              {lowLabel}
             </h3>
           </div>
           <div className="space-y-1">

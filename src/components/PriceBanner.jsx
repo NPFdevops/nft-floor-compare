@@ -183,11 +183,7 @@ const PriceBanner = ({ collection1, collection2 }) => {
   }
 
   return (
-    <div className={`price-banner bg-gradient-to-r ${
-      projection.isIncrease 
-        ? 'from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/40 border-green-500 dark:border-green-700' 
-        : 'from-red-50 to-red-100 dark:from-red-950/40 dark:to-red-900/40 border-red-500 dark:border-red-700'
-    } border-2 rounded-none p-4 mb-6 shadow-[4px_4px_0px_#000000] dark:shadow-[4px_4px_0px_#404040]`}>
+    <div className="price-banner border-2 border-black rounded-none p-4 mb-6" style={{ backgroundColor: '#DAB6FC' }}>
       <div className="flex items-start gap-3">
         <div className={`flex-shrink-0 p-2 rounded-none border-2 ${
           projection.isIncrease 
@@ -200,14 +196,14 @@ const PriceBanner = ({ collection1, collection2 }) => {
         </div>
         
         <div className="flex-1">
-          <div className="text-black dark:text-white font-bold text-lg mb-2">
+          <div className="text-black font-bold text-lg mb-2">
             Price Projection
           </div>
           
-          <div className="text-sm text-black dark:text-gray-200 leading-relaxed">
+          <div className="text-sm text-black leading-relaxed">
             The price of{' '}
-            <span 
-              className="font-bold px-2 py-0.5 rounded text-white text-sm"
+            <span
+              className="font-bold px-2 py-0.5 rounded text-black text-sm"
               style={{ backgroundColor: chartColors.collection1 }}
             >
               {projection.fromCollection}
@@ -219,8 +215,8 @@ const PriceBanner = ({ collection1, collection2 }) => {
               {formatETH(projection.projectedPrice)} ETH
             </span>{' '}
             if it had the market cap of{' '}
-            <span 
-              className="font-bold px-2 py-0.5 rounded text-white text-sm"
+            <span
+              className="font-bold px-2 py-0.5 rounded text-black text-sm"
               style={{ backgroundColor: chartColors.collection2 }}
             >
               {projection.toCollection}

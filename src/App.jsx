@@ -642,22 +642,25 @@ function App() {
         </header>
         
         {/* Main Content */}
-        <div className="flex flex-1 flex-col py-4 sm:py-8 pb-20 md:pb-8 md:pt-20">
+        <div className="flex flex-1 flex-col py-4 sm:py-8 pb-20 md:pb-8 md:pt-28 lg:pt-32">
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 flex flex-col flex-1">
-            {/* Breadcrumb Navigation (hidden on mobile) */}
-            <nav className={`hidden md:flex items-center gap-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-6 mt-4`}>
+            {/* Breadcrumb Navigation (visible on desktop) */}
+            <nav className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-6 relative z-10`}>
               <a href="https://nftpricefloor.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#DD5994] transition-colors">
                 Home
               </a>
               <span>→</span>
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>Chart Comparison</span>
             </nav>
-            
+
             {/* Page Title */}
-            <div className="mb-8">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-left" style={{ color: 'var(--text-primary)' }}>
+            <div className="mb-10">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-left mb-3" style={{ color: 'var(--text-primary)' }}>
                 Collection Comparison
               </h1>
+              <h2 className={`text-lg sm:text-xl ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Compare NFT floor prices and historical performance across collections
+              </h2>
             </div>
             
             {/* Comparison Examples */}
@@ -835,13 +838,13 @@ function App() {
       {/* Footer */}
       <footer className="border-t mt-auto w-full overflow-x-hidden" style={{ backgroundColor: isDark ? 'var(--surface)' : '#FFFFFF', borderColor: isDark ? '#333' : 'var(--border)' }}>
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-12 min-w-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-3 gap-8 mb-8">
             {/* Company Info */}
-            <div className="col-span-1">
+            <div>
               <a href="https://nftpricefloor.com" className="inline-block hover:opacity-80 transition-opacity">
-                <img 
-                  src={isDark ? logoDarkImage : logoLightImage} 
-                  alt="NFT Price Floor Logo" 
+                <img
+                  src={isDark ? logoDarkImage : logoLightImage}
+                  alt="NFT Price Floor Logo"
                   className="h-8 mb-4"
                 />
               </a>
@@ -866,9 +869,9 @@ function App() {
                 </a>
               </div>
             </div>
-            
+
             {/* Quick Links */}
-            <div className="col-span-1">
+            <div>
               <h3 className="font-semibold text-sm uppercase tracking-wide mb-4" style={{ color: 'var(--text-primary)' }}>Explore</h3>
               <ul className="space-y-3">
                 <li><a href="https://nftpricefloor.com" className="text-gray-600 hover:text-[#DD5994] text-sm transition-colors">Rankings</a></li>
@@ -877,9 +880,9 @@ function App() {
                 <li><a href="https://nftpricefloor.com/wallet-tracker" className="text-gray-600 hover:text-[#DD5994] text-sm transition-colors">Wallet Tracker</a></li>
               </ul>
             </div>
-            
+
             {/* Tools */}
-            <div className="col-span-1">
+            <div>
               <h3 className="font-semibold text-sm uppercase tracking-wide mb-4" style={{ color: 'var(--text-primary)' }}>More</h3>
               <ul className="space-y-3">
                 <li><a href="#" className="text-gray-600 hover:text-[#DD5994] text-sm transition-colors">Price Comparison</a></li>
