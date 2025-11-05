@@ -570,9 +570,29 @@ function App() {
 
   return (
     <div className={`relative flex size-full min-h-screen flex-col transition-colors duration-200`} style={{fontFamily: '"Space Grotesk", sans-serif', backgroundColor: isDark ? '#000000' : '#FFF6FB'}}>
-      <div className="layout-container flex h-full grow flex-col">
+
+      {/* Sponsorship Banner - Fixed at top with high z-index */}
+      <a
+        href="https://tally.so/r/wvOxE8"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed top-0 left-0 right-0 z-[60] block w-full text-center py-2 px-4 text-sm font-medium transition-colors duration-200 hover:opacity-90"
+        style={{ backgroundColor: 'var(--accent-color)', color: '#000' }}
+        onClick={() => {
+          posthog?.capture('banner_click', {
+            banner_type: 'sponsorship',
+            destination: 'tally_form',
+            component_name: 'SponsorshipBanner',
+            action: 'click'
+          });
+        }}
+      >
+        🚀 Want to sponsor this page? Click here to get started!
+      </a>
+
+      <div className="layout-container flex h-full grow flex-col" style={{ marginTop: '36px' }}>
         {/* Header */}
-        <header className="md:fixed md:top-0 md:left-0 md:right-0 md:z-50 md:shadow-sm md:backdrop-blur-sm w-full overflow-hidden" style={{ backgroundColor: isDark ? 'var(--surface)' : '#FFFFFF', borderBottom: `1px solid ${isDark ? '#333' : 'var(--border)'}` }}>
+        <header className="md:fixed md:top-[36px] md:left-0 md:right-0 md:z-50 md:shadow-sm md:backdrop-blur-sm w-full overflow-hidden" style={{ backgroundColor: isDark ? 'var(--surface)' : '#FFFFFF', borderBottom: `1px solid ${isDark ? '#333' : 'var(--border)'}` }}>
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
             {/* Main header row */}
             <div className="flex items-center justify-between py-4 min-w-0">
@@ -642,7 +662,7 @@ function App() {
         </header>
         
         {/* Main Content */}
-        <div className="flex flex-1 flex-col py-4 sm:py-8 pb-20 md:pb-8 md:pt-28 lg:pt-32">
+        <div className="flex flex-1 flex-col py-4 sm:py-8 pb-20 md:pb-8" style={{ paddingTop: 'calc(7rem + 36px)' }}>
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 flex flex-col flex-1">
             {/* Breadcrumb Navigation (visible on desktop) */}
             <nav className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} mb-6 relative z-10`}>
