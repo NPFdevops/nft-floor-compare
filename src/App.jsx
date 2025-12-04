@@ -207,6 +207,29 @@ function App() {
     }
   }, [collection1, collection2, layout, isInitialized, searchParams, setSearchParams]);
 
+  // Track comparison viewing when both collections are loaded
+  useEffect(() => {
+    if (collection1 && collection2 && !loading.collection1 && !loading.collection2) {
+      // Track that user is viewing the comparison
+      const comparisonStartViewTime = performance.now();
+      window.comparisonViewStartTime = comparisonStartViewTime;
+
+      posthog?.capture('comparison_viewed', {
+        collection1_slug: collection1.slug,
+        collection1_name: collection1.name,
+        collection2_slug: collection2.slug,
+        collection2_name: collection2.name,
+        layout: layout,
+        currency: currency,
+        timeframe: timeRange,
+        collections_count: 2,
+        tags: ['comparison-funnel', 'comparison-viewed', 'chart-viewing'],
+        category: 'comparison',
+        subcategory: 'comparison_view_started'
+      });
+    }
+  }, [collection1, collection2, loading.collection1, loading.collection2, posthog, layout, currency, timeRange]);
+
   // Helper function to get proper collection name from slug
   const getCollectionName = (slug) => {
     const collection = collectionsService.findBySlug(slug);
@@ -254,6 +277,15 @@ function App() {
       if (result.success) {
         const collectionSetter = collectionNumber === 1 ? setCollection1 : setCollection2;
         const properCollectionName = getCollectionName(collectionSlug);
+        console.log('🔍 Collection data before setting:', {
+          collectionNumber,
+          slug: collectionSlug,
+          hasPriceHistory: !!result.priceHistory,
+          priceHistoryLength: result.priceHistory?.length,
+          hasRawData: !!result.rawData,
+          rawDataKeys: result.rawData ? Object.keys(result.rawData) : null
+        });
+        
         collectionSetter({
           slug: collectionSlug,
           name: properCollectionName,
@@ -263,13 +295,39 @@ function App() {
           timeRange: 'All'
         });
         console.log('✅ Successfully updated collection', collectionNumber, properCollectionName);
+        console.log('🔍 Collection after setting:', collectionNumber === 1 ? collection1 : collection2);
         
         // Track collection search analytics
         posthog?.capture('collection_searched', {
           collection_slug: collectionSlug,
           collection_number: collectionNumber,
-          layout: layout
+          layout: layout,
+          tags: ['search', 'collection-discovery', 'comparison-setup'],
+          category: 'discovery',
+          subcategory: 'collection_search'
         });
+
+        // Track comparison completion when both collections loaded
+        if (collectionNumber === 2 && collection1) {
+          const comparisonStartTime = performance.now();
+          posthog?.capture('comparison_started', {
+            collection1_slug: collection1.slug,
+            collection1_name: collection1.name,
+            collection2_slug: collectionSlug,
+            collection2_name: properCollectionName,
+            source: 'search',
+            layout: layout,
+            currency: currency,
+            tags: ['comparison-funnel', 'comparison-started', 'user-comparison'],
+            category: 'comparison',
+            subcategory: 'comparison_initiated',
+            time_to_complete_ms: Math.round(comparisonStartTime - (window.comparisonStartTime || comparisonStartTime))
+          });
+          window.comparisonStartTime = null;
+        } else if (collectionNumber === 1) {
+          // Mark when first collection is loaded for timing
+          window.comparisonStartTime = performance.now();
+        }
       } else {
         setError(prev => ({ ...prev, [errorKey]: result.error }));
       }

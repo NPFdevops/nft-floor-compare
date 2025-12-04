@@ -110,16 +110,25 @@ const SearchBar = React.forwardRef(({
   };
 
   const handleCollectionSelect = (collection) => {
-    // Track collection selection
-    safeCapture(posthog, 'collection_selected', {
+    // Track collection selection with enhanced analytics
+    const resultPosition = filteredCollections?.findIndex(c => c.slug === collection.slug) + 1 || 1;
+    const totalResults = filteredCollections?.length || 0;
+
+    safeCapture(posthog, 'search_result_clicked', {
       slot: slot,
       collection_slug: collection.slug,
       collection_name: collection.name,
       source: 'dropdown',
       device_type: deviceType,
-      ranking: collection.ranking
+      ranking: collection.ranking,
+      result_position: resultPosition,
+      result_total_count: totalResults,
+      query_used: query,
+      tags: ['search', 'discovery', 'collection-selection', 'conversion'],
+      category: 'discovery',
+      subcategory: 'search_conversion'
     });
-    
+
     setQuery(collection.name);
     setIsDropdownOpen(false);
     onSearch(collection.slug);
@@ -273,19 +282,7 @@ const SearchBar = React.forwardRef(({
         </div>
       )}
 
-      {(error || collectionsState.error) && (
-        <div className="mt-2 p-3 bg-red-100 border-2 border-red-500 rounded-none">
-          <p className="text-red-700 text-sm font-medium">
-            Try again, please
-            {collectionsState.error && (
-              <span className="block mt-1 text-xs">Using cached collections as fallback</span>
-            )}
-            {error && (
-              <span className="block mt-1 text-xs opacity-75">{error}</span>
-            )}
-          </p>
-        </div>
-      )}
+
 
       {/* Selected collection display hidden per requirements */}
     </div>
