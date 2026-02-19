@@ -2,6 +2,7 @@ import React from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { generateLegacyCollectionImage } from '../data/collections';
 import { safeCapture, getDeviceType } from '../utils/analytics';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Helper function to generate NFTPriceFloor S3 CDN image URL
 const generateCollectionImage = (slug) => {
@@ -11,6 +12,7 @@ const generateCollectionImage = (slug) => {
 const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
   const [activeExample, setActiveExample] = React.useState(null);
   const posthog = usePostHog();
+  const { isDark } = useTheme();
   
   // Popular NFT collection comparisons using NFTPriceFloor slugs and S3 CDN images
   const examples = [
@@ -119,7 +121,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
               onClick={() => handleClick(example, index)}
               className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#E3579A] active:scale-95 p-3"
               style={{
-                backgroundColor: activeExample === index ? '#E3579A' : '#f5f5f5'
+                backgroundColor: activeExample === index ? '#E3579A' : (isDark ? 'var(--surface)' : '#f5f5f5')
               }}
               title={`${example.collection1.name} vs ${example.collection2.name}`}
             >
@@ -181,7 +183,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
             onClick={() => handleClick(example, index)}
             className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#E3579A] active:scale-95 p-3"
             style={{
-              backgroundColor: activeExample === index ? '#E3579A' : '#f5f5f5'
+              backgroundColor: activeExample === index ? '#E3579A' : (isDark ? 'var(--surface)' : '#f5f5f5')
             }}
             title={`${example.collection1.name} vs ${example.collection2.name}`}
           >
@@ -234,13 +236,13 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
           onClick={handleCustomClick}
           className="group relative border-2 border-black rounded-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#E3579A] active:scale-95 p-3"
           style={{
-            backgroundColor: '#FFD93D'
+            backgroundColor: isDark ? '#5a4a00' : '#FFD93D'
           }}
           title="Choose your own collections"
         >
           <div className="flex items-center justify-center gap-3">
             {/* Collection 1 - Empty */}
-            <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 flex items-center justify-center bg-white transform group-hover:scale-110 group-hover:rotate-[-3deg] transition-all duration-200">
+            <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 flex items-center justify-center transform group-hover:scale-110 group-hover:rotate-[-3deg] transition-all duration-200" style={{ backgroundColor: 'var(--surface)' }}>
               <span className="text-3xl font-bold text-gray-400 group-hover:scale-125 transition-transform duration-200">?</span>
             </div>
 
@@ -252,7 +254,7 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
             </div>
 
             {/* Collection 2 - Empty */}
-            <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 flex items-center justify-center bg-white transform group-hover:scale-110 group-hover:rotate-[3deg] transition-all duration-200">
+            <div className="relative w-14 h-14 border-2 border-black rounded-none overflow-hidden flex-shrink-0 flex items-center justify-center transform group-hover:scale-110 group-hover:rotate-[3deg] transition-all duration-200" style={{ backgroundColor: 'var(--surface)' }}>
               <span className="text-3xl font-bold text-gray-400 group-hover:scale-125 transition-transform duration-200">?</span>
             </div>
           </div>
