@@ -608,7 +608,7 @@ function App() {
   };
 
   return (
-    <div className={`relative flex size-full min-h-screen flex-col transition-colors duration-200`} style={{fontFamily: '"Space Grotesk", sans-serif', backgroundColor: isDark ? '#000000' : '#FFF6FB'}}>
+    <div className={`relative flex size-full min-h-screen flex-col transition-colors duration-200`} style={{fontFamily: '"Space Grotesk", sans-serif', backgroundColor: isDark ? 'var(--background)' : '#FFF6FB'}}>
 
       {/* Sponsorship Banner - Fixed at top with high z-index */}
       <a
@@ -723,7 +723,10 @@ function App() {
             </div>
             
             {/* Comparison Examples */}
-            <ComparisonExamples 
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+              Popular pairs — click to compare
+            </p>
+            <ComparisonExamples
               onSelectComparison={handleComparisonSelect}
               isMobile={isMobile}
               onOpenSearch={() => searchBar1Ref.current?.click()}
@@ -785,7 +788,7 @@ function App() {
             />
 
             {/* Chart Controls - Above Chart */}
-            <div className="flex flex-row items-center justify-between gap-2 md:gap-3 py-6 flex-wrap">
+            <div className="flex flex-row items-center justify-between gap-2 md:gap-3 py-6 flex-wrap overflow-x-auto">
               {/* Left Side - Currency, Log Scale, and Ratio */}
               <div className="flex items-center gap-2 md:gap-3">
                 <CurrencySwitch

@@ -268,7 +268,7 @@ const ChartMetrics = ({ collection1, collection2, currency = 'ETH', timeRange = 
       {/* Title Section */}
       <div className="mb-6">
         <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-          Collection Metrics
+          Floor Price Statistics
         </h2>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           Floor price statistics for the {getTimeRangeLabel().toLowerCase()} period

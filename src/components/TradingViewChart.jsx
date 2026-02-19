@@ -329,7 +329,10 @@ const TradingViewChart = ({
                 type: 'custom',
                 formatter: (price) => {
                   if (isRatioMode) {
-                    return `${parseFloat(price).toFixed(3)}x`;
+                    const p = parseFloat(price);
+                    if (p >= 10) return `${Math.round(p)}x`;
+                    if (p >= 1) return `${p.toFixed(2)}x`;
+                    return `${p.toFixed(3)}x`;
                   }
                   if (currency === 'USD') {
                     return `$${parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

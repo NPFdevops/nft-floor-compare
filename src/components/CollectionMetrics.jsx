@@ -197,7 +197,7 @@ const CollectionMetrics = ({ collection1, collection2, loading: parentLoading })
   return (
     <div className="collection-metrics">
       <div className="mb-6">
-        <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Collection Metrics</h2>
+        <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Side-by-Side Metrics</h2>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Compare key statistics between collections</p>
       </div>
       

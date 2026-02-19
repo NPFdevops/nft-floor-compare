@@ -141,7 +141,7 @@ const RatioMetrics = ({ collection1, collection2, ratioData, timeRange = 'All' }
           <div style={valueStyle}>{athPoint.y.toFixed(3)}x</div>
           <div style={{ ...subStyle, marginTop: 2 }}>
             <span style={{ color: '#16a34a' }}>
-              +{((athPoint.y - current) / current * 100).toFixed(1)}% from now
+              +{((athPoint.y - current) / current * 100).toFixed(1)}% vs. current
             </span>
           </div>
           <div style={{ ...subStyle, marginTop: 2 }}>{formatDate(athPoint.x)}</div>
@@ -153,7 +153,7 @@ const RatioMetrics = ({ collection1, collection2, ratioData, timeRange = 'All' }
           <div style={valueStyle}>{atlPoint.y.toFixed(3)}x</div>
           <div style={{ ...subStyle, marginTop: 2 }}>
             <span style={{ color: '#dc2626' }}>
-              {((atlPoint.y - current) / current * 100).toFixed(1)}% from now
+              {((atlPoint.y - current) / current * 100).toFixed(1)}% vs. current
             </span>
           </div>
           <div style={{ ...subStyle, marginTop: 2 }}>{formatDate(atlPoint.x)}</div>

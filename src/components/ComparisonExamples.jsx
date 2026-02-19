@@ -159,6 +159,11 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
                   />
                 </div>
               </div>
+              <div className="mt-1 text-center">
+                <span className="text-[9px] font-semibold truncate block leading-tight" style={{ color: 'var(--text-secondary)' }}>
+                  {example.collection1.name.split(' ')[0]} vs {example.collection2.name.split(' ')[0]}
+                </span>
+              </div>
             </button>
           ))}
         </div>
@@ -216,9 +221,14 @@ const ComparisonExamples = ({ onSelectComparison, isMobile, onOpenSearch }) => {
                 />
               </div>
             </div>
+            <div className="mt-1.5 text-center">
+              <span className="text-[10px] font-semibold truncate block leading-tight" style={{ color: 'var(--text-secondary)' }}>
+                {example.collection1.name.split(' ')[0]} vs {example.collection2.name.split(' ')[0]}
+              </span>
+            </div>
           </button>
         ))}
-        
+
         {/* Custom Card - Opens Search */}
         <button
           onClick={handleCustomClick}
