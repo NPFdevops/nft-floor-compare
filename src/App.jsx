@@ -25,6 +25,8 @@ import CollectionMetrics from './components/CollectionMetrics';
 import PriceBanner from './components/PriceBanner';
 import CurrencySwitch from './components/CurrencySwitch';
 import LogScaleSwitch from './components/LogScaleSwitch';
+import RatioSwitch from './components/RatioSwitch';
+import RatioMetrics from './components/RatioMetrics';
 import TimeRangeSwitch from './components/TimeRangeSwitch';
 import ComparisonExamples from './components/ComparisonExamples';
 import SettingsModal from './components/SettingsModal';
@@ -59,6 +61,7 @@ function App() {
   const [isMobile, setIsMobile] = useState(false); // Track if viewport is mobile size
   const [currency, setCurrency] = useState('ETH'); // Track currency display (ETH or USD)
   const [isLogScale, setIsLogScale] = useState(false); // Track log scale toggle (linear vs logarithmic)
+  const [isRatioMode, setIsRatioMode] = useState(initialUrlState.isRatioMode || false); // Track ratio mode (floor prices vs ratio)
   const [timeRange, setTimeRange] = useState('All'); // Track selected time range (30D, 90D, YTD, All)
   const searchBar1Ref = useRef(null); // Ref for first SearchBar to trigger focus
   
@@ -195,17 +198,47 @@ function App() {
   // URL synchronization effect - update URL when state changes
   useEffect(() => {
     if (!isInitialized) return; // Don't update URL during initialization
-    
-    const params = createUrlParams({ collection1, collection2, layout });
+
+    const params = createUrlParams({ collection1, collection2, layout, isRatioMode });
     const currentParams = searchParams.toString();
     const newParams = params.toString();
-    
+
     // Only update URL if parameters have changed
     if (currentParams !== newParams) {
       console.log('🔗 Updating URL params:', { from: currentParams, to: newParams });
       setSearchParams(params, { replace: true });
     }
-  }, [collection1, collection2, layout, isInitialized, searchParams, setSearchParams]);
+  }, [collection1, collection2, layout, isRatioMode, isInitialized, searchParams, setSearchParams]);
+
+  // Auto-disable ratio mode when only one collection is selected
+  useEffect(() => {
+    if (isRatioMode && (!collection1 || !collection2)) {
+      setIsRatioMode(false);
+    }
+  }, [collection1, collection2, isRatioMode]);
+
+  // Calculate ratio data: collection1 price / collection2 price, aligned by date
+  const calculateRatioData = React.useMemo(() => {
+    if (!isRatioMode || !collection1?.data || !collection2?.data) return null;
+
+    const col2Map = new Map();
+    collection2.data.forEach(point => {
+      const dateStr = (point.x instanceof Date ? point.x : new Date(point.x)).toISOString().split('T')[0];
+      col2Map.set(dateStr, point.y);
+    });
+
+    return collection1.data
+      .map(point => {
+        const dateStr = (point.x instanceof Date ? point.x : new Date(point.x)).toISOString().split('T')[0];
+        const col2Val = col2Map.get(dateStr);
+        if (!col2Val || col2Val === 0) return null;
+        const ratio = point.y / col2Val;
+        if (!isFinite(ratio) || ratio <= 0) return null;
+        return { x: point.x, y: ratio };
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(a.x) - new Date(b.x));
+  }, [collection1, collection2, isRatioMode]);
 
   // Helper function to get proper collection name from slug
   const getCollectionName = (slug) => {
@@ -378,6 +411,12 @@ function App() {
       has_collection1: !!collection1,
       has_collection2: !!collection2
     });
+  };
+
+  // Handle ratio mode change
+  const handleRatioModeChange = (newRatioMode) => {
+    console.log('📊 Ratio mode changed to:', newRatioMode ? 'ratio' : 'floor');
+    setIsRatioMode(newRatioMode);
   };
 
   // Handle time range change
@@ -747,7 +786,7 @@ function App() {
 
             {/* Chart Controls - Above Chart */}
             <div className="flex flex-row items-center justify-between gap-2 md:gap-3 py-6 flex-wrap">
-              {/* Left Side - Currency and Log Scale */}
+              {/* Left Side - Currency, Log Scale, and Ratio */}
               <div className="flex items-center gap-2 md:gap-3">
                 <CurrencySwitch
                   currency={currency}
@@ -756,6 +795,11 @@ function App() {
                 <LogScaleSwitch
                   isLogScale={isLogScale}
                   onLogScaleChange={handleLogScaleChange}
+                />
+                <RatioSwitch
+                  isRatioMode={isRatioMode}
+                  onRatioModeChange={handleRatioModeChange}
+                  disabled={!collection1 || !collection2 || loading.collection1 || loading.collection2}
                 />
               </div>
 
@@ -782,26 +826,37 @@ function App() {
                   <ChartDisplay
                     collection={reformatCollectionData(collection1, currency)}
                     collection2={reformatCollectionData(collection2, currency)}
+                    ratioData={calculateRatioData}
                     title="Floor Price Comparison"
                     loading={loading.collection1 || loading.collection2}
                     error={error.collection1 || error.collection2}
                     isComparison={true}
                     currency={currency}
                     isLogScale={isLogScale}
+                    isRatioMode={isRatioMode}
                     currentTimeRange={timeRange}
                   />
                 </div>
               </div>
             </div>
             
-            {/* Chart Metrics */}
+            {/* Chart Metrics / Ratio Metrics */}
             <div className="mt-8">
-              <ChartMetrics
-                collection1={collection1}
-                collection2={collection2}
-                currency={currency}
-                timeRange={timeRange}
-              />
+              {isRatioMode && calculateRatioData ? (
+                <RatioMetrics
+                  collection1={collection1}
+                  collection2={collection2}
+                  ratioData={calculateRatioData}
+                  timeRange={timeRange}
+                />
+              ) : (
+                <ChartMetrics
+                  collection1={collection1}
+                  collection2={collection2}
+                  currency={currency}
+                  timeRange={timeRange}
+                />
+              )}
             </div>
 
             {/* Collection Metrics */}

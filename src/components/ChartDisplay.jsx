@@ -13,7 +13,7 @@ import {
   getFavoriteCollections 
 } from '../utils/analytics';
 
-const ChartDisplay = ({ collection, collection2, title, loading, error, timeframe, onRangeChange, isComparison, currency = 'ETH', isLogScale = false, currentTimeRange = 'All' }) => {
+const ChartDisplay = ({ collection, collection2, ratioData, isRatioMode = false, title, loading, error, timeframe, onRangeChange, isComparison, currency = 'ETH', isLogScale = false, currentTimeRange = 'All' }) => {
   const posthog = usePostHog();
   const renderTimerRef = useRef(null);
   
@@ -144,57 +144,95 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
 
   // Handle comparison view (stacked layout with both collections)
   if (isComparison) {
-    const collections = [collection, collection2].filter(Boolean);
-    
+    // In ratio mode, display a single synthetic ratio collection; otherwise both collections
+    let collections;
+    if (isRatioMode && ratioData?.length > 0) {
+      collections = [{
+        name: `${collection?.name || 'A'} / ${collection2?.name || 'B'}`,
+        slug: 'ratio',
+        data: ratioData
+      }];
+    } else {
+      collections = [collection, collection2].filter(Boolean);
+    }
+
+    // Current ratio value for header display
+    const currentRatio = isRatioMode && ratioData?.length > 0
+      ? ratioData[ratioData.length - 1].y
+      : null;
+
   return (
     <div className="flex flex-col h-full rounded-none border-2" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}>
       <div className="flex flex-col border-b-2 px-6 py-4 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-lg font-bold leading-normal" style={{ color: 'var(--text-primary)' }}>Floor Price Comparison: </span>
-            {collections.map((coll, index) => {
-              if (!coll?.name) return null;
-              const color = chartColors[index] || chartColors[0];
-              return (
-                <span key={coll.name} className="flex items-center gap-1">
-                  <div 
-                    className="px-3 py-1 rounded text-lg font-bold leading-normal text-white"
-                    style={{ backgroundColor: color }}
-                  >
-                    {coll.name}
-                  </div>
-                  {index < collections.length - 1 && (
-                    <span className="text-lg font-bold leading-normal mx-1" style={{ color: 'var(--text-primary)' }}>vs</span>
-                  )}
-                </span>
-              );
-            })}
+            <span className="text-lg font-bold leading-normal" style={{ color: 'var(--text-primary)' }}>
+              {isRatioMode ? 'Floor Price Ratio: ' : 'Floor Price Comparison: '}
+            </span>
+            {isRatioMode ? (
+              // Ratio mode: show col1 / col2 with colors
+              <>
+                <div className="px-3 py-1 rounded text-lg font-bold leading-normal text-white" style={{ backgroundColor: chartColors[0] }}>
+                  {collection?.name || 'A'}
+                </div>
+                <span className="text-lg font-bold leading-normal mx-1" style={{ color: 'var(--text-primary)' }}>/</span>
+                <div className="px-3 py-1 rounded text-lg font-bold leading-normal text-white" style={{ backgroundColor: chartColors[1] }}>
+                  {collection2?.name || 'B'}
+                </div>
+              </>
+            ) : (
+              // Normal mode: show col1 vs col2
+              collections.map((coll, index) => {
+                if (!coll?.name) return null;
+                const color = chartColors[index] || chartColors[0];
+                return (
+                  <span key={coll.name} className="flex items-center gap-1">
+                    <div className="px-3 py-1 rounded text-lg font-bold leading-normal text-white" style={{ backgroundColor: color }}>
+                      {coll.name}
+                    </div>
+                    {index < collections.length - 1 && (
+                      <span className="text-lg font-bold leading-normal mx-1" style={{ color: 'var(--text-primary)' }}>vs</span>
+                    )}
+                  </span>
+                );
+              })
+            )}
           </div>
           <div className="hidden md:flex gap-4 text-right">
-            {collections.map((coll, index) => {
-              const price = getFloorPrice(coll);
-              const change = getPriceChange(coll);
-              if (!price || !coll?.name) return null;
-              const color = chartColors[index] || chartColors[0];
-              
-              return (
-                <div key={coll.name} className="text-right">
-                  <p className="text-sm font-bold" style={{ color: color }}>{coll.name}</p>
-                  <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatPrice(price)}</p>
-                  {change !== null && (
-                    <p className={`text-xs font-medium ${
-                      change >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                    </p>
-                  )}
+            {isRatioMode ? (
+              currentRatio !== null && (
+                <div className="text-right">
+                  <p className="text-sm font-bold" style={{ color: chartColors[0] }}>
+                    {collection?.name} / {collection2?.name}
+                  </p>
+                  <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {parseFloat(currentRatio).toFixed(3)}x
+                  </p>
                 </div>
-              );
-            })}
+              )
+            ) : (
+              collections.map((coll, index) => {
+                const price = getFloorPrice(coll);
+                const change = getPriceChange(coll);
+                if (!price || !coll?.name) return null;
+                const color = chartColors[index] || chartColors[0];
+                return (
+                  <div key={coll.name} className="text-right">
+                    <p className="text-sm font-bold" style={{ color: color }}>{coll.name}</p>
+                    <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatPrice(price)}</p>
+                    {change !== null && (
+                      <p className={`text-xs font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                      </p>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
-      
+
       <div className="flex flex-1">
         {loading ? (
           <div className="flex flex-1">{renderLoadingState()}</div>
@@ -211,6 +249,7 @@ const ChartDisplay = ({ collection, collection2, title, loading, error, timefram
               height={450}
               currency={currency}
               isLogScale={isLogScale}
+              isRatioMode={isRatioMode}
               currentTimeRange={currentTimeRange}
             />
           </div>

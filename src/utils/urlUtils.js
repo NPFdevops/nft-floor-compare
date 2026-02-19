@@ -36,25 +36,29 @@ export const decodeCollectionSlug = (encodedSlug) => {
  * @param {string} options.layout - Current layout
  * @returns {URLSearchParams} - URL search parameters
  */
-export const createUrlParams = ({ collection1, collection2, timeframe, layout }) => {
+export const createUrlParams = ({ collection1, collection2, timeframe, layout, isRatioMode }) => {
   const params = new URLSearchParams();
-  
+
   if (collection1?.slug) {
     params.set('c1', encodeCollectionSlug(collection1.slug));
   }
-  
+
   if (collection2?.slug) {
     params.set('c2', encodeCollectionSlug(collection2.slug));
   }
-  
+
   if (timeframe && timeframe !== '30d') { // Don't include default timeframe
     params.set('t', timeframe);
   }
-  
+
   if (layout && layout !== 'horizontal') { // Don't include default layout
     params.set('layout', layout);
   }
-  
+
+  if (isRatioMode) {
+    params.set('ratio', '1');
+  }
+
   return params;
 };
 
@@ -68,7 +72,8 @@ export const parseUrlParams = (searchParams) => {
     collection1Slug: null,
     collection2Slug: null,
     timeframe: '30d',
-    layout: 'horizontal'
+    layout: 'horizontal',
+    isRatioMode: false
   };
   
   // Parse collection slugs
@@ -101,7 +106,10 @@ export const parseUrlParams = (searchParams) => {
       state.layout = layout;
     }
   }
-  
+
+  // Parse ratio mode
+  state.isRatioMode = searchParams.get('ratio') === '1';
+
   return state;
 };
 

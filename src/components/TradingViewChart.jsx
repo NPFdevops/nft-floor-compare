@@ -10,7 +10,8 @@ const TradingViewChart = ({
   height = 400,
   currency = 'ETH',
   isLogScale = false,
-  currentTimeRange = 'All' // Prop to sync selected range from parent
+  isRatioMode = false,
+  currentTimeRange = 'All'
 }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef();
@@ -322,16 +323,18 @@ const TradingViewChart = ({
             seriesRefs.current[index] = areaSeries;
             console.log(`✨ Successfully set chart data for ${collection.name} (series ${index} added)`);
             
-            // Add custom tooltip formatting based on currency
+            // Custom price formatter: ratio mode shows "1.45x", otherwise ETH or USD
             areaSeries.applyOptions({
               priceFormat: {
                 type: 'custom',
                 formatter: (price) => {
+                  if (isRatioMode) {
+                    return `${parseFloat(price).toFixed(3)}x`;
+                  }
                   if (currency === 'USD') {
                     return `$${parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                  } else {
-                    return `${parseFloat(price).toFixed(2)} ETH`;
                   }
+                  return `${parseFloat(price).toFixed(2)} ETH`;
                 },
               },
             });
@@ -380,7 +383,7 @@ const TradingViewChart = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [collections, height, currency, isLogScale, selectedRange]);
+  }, [collections, height, currency, isLogScale, isRatioMode, selectedRange]);
 
   // Show placeholder if no valid data
   if (!collections || collections.length === 0 || !collections.some(c => c && c.data && c.data.length > 0)) {
