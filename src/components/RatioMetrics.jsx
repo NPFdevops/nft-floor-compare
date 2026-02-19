@@ -1,13 +1,11 @@
 import React from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+
+const chartColors = {
+  collection1: '#e91e63',
+  collection2: '#9c27b0'
+};
 
 const RatioMetrics = ({ collection1, collection2, ratioData, timeRange = 'All' }) => {
-  const { isDark } = useTheme();
-
-  const chartColors = {
-    collection1: '#e91e63',
-    collection2: '#9c27b0'
-  };
 
   // Filter ratio data by selected time range
   const filterByTimeRange = (data, range) => {
@@ -65,7 +63,6 @@ const RatioMetrics = ({ collection1, collection2, ratioData, timeRange = 'All' }
   const filtered = filterByTimeRange(ratioData, timeRange).filter(p => p.y > 0);
   if (filtered.length === 0) return null;
 
-  // Core stats
   const current = filtered[filtered.length - 1].y;
   const first = filtered[0].y;
   const pctChange = ((current - first) / first) * 100;
@@ -73,46 +70,26 @@ const RatioMetrics = ({ collection1, collection2, ratioData, timeRange = 'All' }
   const athPoint = filtered.reduce((max, p) => p.y > max.y ? p : max, filtered[0]);
   const atlPoint = filtered.reduce((min, p) => p.y < min.y ? p : min, filtered[0]);
 
-  // Crossover points: consecutive data points that straddle 1.0
   const crossovers = [];
   for (let i = 1; i < filtered.length; i++) {
     const prev = filtered[i - 1];
     const curr = filtered[i];
     if ((prev.y < 1 && curr.y >= 1) || (prev.y >= 1 && curr.y < 1)) {
-      const direction = curr.y >= 1 ? 'above' : 'below';
-      crossovers.push({ date: curr.x, direction, value: curr.y });
+      crossovers.push({ date: curr.x, direction: curr.y >= 1 ? 'above' : 'below', value: curr.y });
     }
   }
 
-  const cardStyle = {
-    backgroundColor: isDark ? 'var(--surface)' : '#ffffff',
-    borderColor: isDark ? '#333' : 'var(--border)'
-  };
-
-  const labelStyle = {
-    color: isDark ? '#9ca3af' : '#6b7280',
-    fontSize: '0.7rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase'
-  };
-
-  const valueStyle = {
-    color: 'var(--text-primary)',
-    fontSize: '1.25rem',
-    fontWeight: 700
-  };
-
-  const subStyle = {
-    color: isDark ? '#6b7280' : '#9ca3af',
-    fontSize: '0.75rem'
-  };
+  // Shared label style matching ChartMetrics
+  const labelClass = 'text-xs font-bold uppercase tracking-wide';
 
   return (
     <div>
-      <div className="mb-3">
-        <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Ratio Metrics</h3>
-        <p style={{ color: isDark ? '#6b7280' : '#9ca3af', fontSize: '0.875rem' }}>
+      {/* Section header — matches ChartMetrics */}
+      <div className="mb-6">
+        <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          Ratio Metrics
+        </h2>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           <span style={{ color: chartColors.collection1, fontWeight: 700 }}>{collection1.name}</span>
           {' ÷ '}
           <span style={{ color: chartColors.collection2, fontWeight: 700 }}>{collection2.name}</span>
@@ -121,104 +98,133 @@ const RatioMetrics = ({ collection1, collection2, ratioData, timeRange = 'All' }
         </p>
       </div>
 
-      {/* Stat cards row */}
+      {/* 4-stat cards — border-2 border-black rounded-none, matching design system */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {/* Current ratio */}
-        <div className="rounded-none border-2 p-4" style={cardStyle}>
-          <div style={labelStyle} className="mb-1">Current Ratio</div>
-          <div style={valueStyle}>{current.toFixed(3)}x</div>
-          <div style={{ ...subStyle, marginTop: 2 }}>
-            {current >= 1
-              ? <span style={{ color: '#16a34a' }}>{collection1.name} premium</span>
-              : <span style={{ color: '#dc2626' }}>{collection2.name} premium</span>
-            }
+
+        {/* Current Ratio */}
+        <div className="border-2 border-black rounded-none" style={{ backgroundColor: 'var(--surface)' }}>
+          <div className="px-4 py-2 border-b-2 border-black flex items-center gap-2" style={{ backgroundColor: 'var(--surface-hover)' }}>
+            <span className="material-symbols-outlined text-base" style={{ color: 'var(--text-primary)' }}>compare</span>
+            <span className={labelClass} style={{ color: 'var(--text-primary)' }}>Current</span>
+          </div>
+          <div className="p-4">
+            <p className="text-base md:text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+              {current.toFixed(3)}x
+            </p>
+            <p className="text-xs" style={{ color: current >= 1 ? '#16a34a' : '#dc2626' }}>
+              {current >= 1
+                ? `${collection1.name} premium`
+                : `${collection2.name} premium`}
+            </p>
           </div>
         </div>
 
-        {/* Period high */}
-        <div className="rounded-none border-2 p-4" style={cardStyle}>
-          <div style={labelStyle} className="mb-1">Period High</div>
-          <div style={valueStyle}>{athPoint.y.toFixed(3)}x</div>
-          <div style={{ ...subStyle, marginTop: 2 }}>
-            <span style={{ color: '#16a34a' }}>
+        {/* Period High */}
+        <div className="border-2 border-black rounded-none" style={{ backgroundColor: 'var(--surface)' }}>
+          <div className="px-4 py-2 border-b-2 border-black flex items-center gap-2" style={{ backgroundColor: 'var(--surface-hover)' }}>
+            <span className="material-symbols-outlined text-base text-green-600">trending_up</span>
+            <span className={labelClass} style={{ color: 'var(--text-primary)' }}>Period High</span>
+          </div>
+          <div className="p-4">
+            <p className="text-base md:text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+              {athPoint.y.toFixed(3)}x
+            </p>
+            <p className="text-xs font-bold text-green-600 mb-1">
               +{((athPoint.y - current) / current * 100).toFixed(1)}% vs. current
-            </span>
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{formatDate(athPoint.x)}</p>
           </div>
-          <div style={{ ...subStyle, marginTop: 2 }}>{formatDate(athPoint.x)}</div>
         </div>
 
-        {/* Period low */}
-        <div className="rounded-none border-2 p-4" style={cardStyle}>
-          <div style={labelStyle} className="mb-1">Period Low</div>
-          <div style={valueStyle}>{atlPoint.y.toFixed(3)}x</div>
-          <div style={{ ...subStyle, marginTop: 2 }}>
-            <span style={{ color: '#dc2626' }}>
+        {/* Period Low */}
+        <div className="border-2 border-black rounded-none" style={{ backgroundColor: 'var(--surface)' }}>
+          <div className="px-4 py-2 border-b-2 border-black flex items-center gap-2" style={{ backgroundColor: 'var(--surface-hover)' }}>
+            <span className="material-symbols-outlined text-base text-red-600">trending_down</span>
+            <span className={labelClass} style={{ color: 'var(--text-primary)' }}>Period Low</span>
+          </div>
+          <div className="p-4">
+            <p className="text-base md:text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+              {atlPoint.y.toFixed(3)}x
+            </p>
+            <p className="text-xs font-bold text-red-600 mb-1">
               {((atlPoint.y - current) / current * 100).toFixed(1)}% vs. current
-            </span>
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{formatDate(atlPoint.x)}</p>
           </div>
-          <div style={{ ...subStyle, marginTop: 2 }}>{formatDate(atlPoint.x)}</div>
         </div>
 
-        {/* % change */}
-        <div className="rounded-none border-2 p-4" style={cardStyle}>
-          <div style={labelStyle} className="mb-1">Period Change</div>
-          <div style={{ ...valueStyle, color: pctChange >= 0 ? '#16a34a' : '#dc2626' }}>
-            {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
+        {/* Period Change */}
+        <div className="border-2 border-black rounded-none" style={{ backgroundColor: 'var(--surface)' }}>
+          <div className="px-4 py-2 border-b-2 border-black flex items-center gap-2" style={{ backgroundColor: 'var(--surface-hover)' }}>
+            <span className="material-symbols-outlined text-base" style={{ color: 'var(--text-primary)' }}>show_chart</span>
+            <span className={labelClass} style={{ color: 'var(--text-primary)' }}>Period Change</span>
           </div>
-          <div style={{ ...subStyle, marginTop: 2 }}>
-            {first.toFixed(3)}x → {current.toFixed(3)}x
+          <div className="p-4">
+            <p className={`text-base md:text-lg font-bold mb-1 ${pctChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {first.toFixed(3)}x → {current.toFixed(3)}x
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Crossover events */}
-      {crossovers.length > 0 && (
-        <div className="rounded-none border-2 p-4" style={cardStyle}>
-          <div style={labelStyle} className="mb-3">
-            Parity Crossovers ({crossovers.length})
-          </div>
-          <p style={{ ...subStyle, marginBottom: '0.75rem' }}>
-            Dates when the ratio crossed 1.0 (collections at equal floor price)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {crossovers.slice(0, 10).map((c, i) => {
-              const d = c.date instanceof Date ? c.date : new Date(c.date);
-              const dateStr = isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-              return (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold"
-                  style={{
-                    backgroundColor: c.direction === 'above'
-                      ? (isDark ? 'rgba(22,163,74,0.15)' : 'rgba(22,163,74,0.1)')
-                      : (isDark ? 'rgba(220,38,38,0.15)' : 'rgba(220,38,38,0.1)'),
-                    color: c.direction === 'above' ? '#16a34a' : '#dc2626',
-                    border: `1px solid ${c.direction === 'above' ? '#16a34a' : '#dc2626'}`
-                  }}
-                >
-                  {c.direction === 'above' ? '↑' : '↓'} {dateStr}
-                </span>
-              );
-            })}
-            {crossovers.length > 10 && (
-              <span style={subStyle}>+{crossovers.length - 10} more</span>
-            )}
-          </div>
+      {/* Parity Crossovers — same bordered table style as CollectionMetrics */}
+      <div className="border-2 border-black rounded-none" style={{ backgroundColor: 'var(--surface)' }}>
+        {/* Header */}
+        <div className="px-4 py-3 border-b-2 border-black flex items-center gap-2" style={{ backgroundColor: 'var(--surface-hover)' }}>
+          <span className="material-symbols-outlined text-base" style={{ color: 'var(--text-primary)' }}>swap_horiz</span>
+          <span className={labelClass} style={{ color: 'var(--text-primary)' }}>
+            Parity Crossovers{crossovers.length > 0 ? ` (${crossovers.length})` : ''}
+          </span>
         </div>
-      )}
 
-      {crossovers.length === 0 && filtered.length > 0 && (
-        <div className="rounded-none border-2 p-4" style={cardStyle}>
-          <div style={labelStyle} className="mb-1">Parity Crossovers</div>
-          <p style={subStyle}>
-            No crossovers in this period —{' '}
-            {current >= 1
-              ? <><span style={{ color: chartColors.collection1 }}>{collection1.name}</span> has been consistently above parity</>
-              : <><span style={{ color: chartColors.collection2 }}>{collection2.name}</span> has been consistently above parity</>
-            }
-          </p>
+        <div className="p-4">
+          {crossovers.length > 0 ? (
+            <>
+              <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                Dates when the ratio crossed 1.0 — collections at equal floor price
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {crossovers.slice(0, 10).map((c, i) => {
+                  const d = c.date instanceof Date ? c.date : new Date(c.date);
+                  const dateStr = isNaN(d.getTime())
+                    ? 'N/A'
+                    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  const isAbove = c.direction === 'above';
+                  return (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 px-2 py-1 border text-xs font-semibold border-black rounded-none"
+                      style={{
+                        backgroundColor: isAbove ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.12)',
+                        color: isAbove ? '#16a34a' : '#dc2626',
+                        borderColor: isAbove ? '#16a34a' : '#dc2626'
+                      }}
+                    >
+                      {isAbove ? '↑' : '↓'} {dateStr}
+                    </span>
+                  );
+                })}
+                {crossovers.length > 10 && (
+                  <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
+                    +{crossovers.length - 10} more
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              No crossovers in this period —{' '}
+              {current >= 1
+                ? <><span style={{ color: chartColors.collection1 }}>{collection1.name}</span> has been consistently above parity</>
+                : <><span style={{ color: chartColors.collection2 }}>{collection2.name}</span> has been consistently above parity</>
+              }
+            </p>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
